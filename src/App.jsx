@@ -15,14 +15,14 @@ export default function App() {
   // Dark / Light Theme State with LocalStorage persistence
   const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('brimon_theme') || 'dark';
+      return localStorage.getItem('asetu_theme') || localStorage.getItem('brimon_theme') || 'dark';
     }
     return 'dark';
   });
 
   useEffect(() => {
     try {
-      localStorage.setItem('brimon_theme', theme);
+      localStorage.setItem('asetu_theme', theme);
     } catch {
       // LocalStorage error handling
     }
@@ -120,7 +120,7 @@ export default function App() {
 
       {/* Clean Minimal Footer */}
       <footer className="mt-auto border-t border-[#D0D7DE] dark:border-[#30363D] py-4 text-center text-xs text-[#656D76] dark:text-[#6E7681] bg-white dark:bg-[#0D1117] transition-colors">
-        BRIMON SHMS &copy; 2026 TIM 25 — AKRAL CATURA · Innovative Bridge Design Competition 2027
+        ASETU SHMS &copy; 2026 TIM 25 · Innovative Bridge Design Competition 2027
       </footer>
     </div>
   );

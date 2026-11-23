@@ -26,8 +26,8 @@ function SidebarComponent({
           {/* Header */}
           <div className="px-6 py-5 border-b border-[#D0D7DE] dark:border-[#30363D] flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-semibold text-[#1F2328] dark:text-white tracking-wide">BRIMON</h2>
-              <p className="text-xs text-[#656D76] dark:text-[#8B949E] mt-0.5">TIM 25 — Akral Catura</p>
+              <h2 className="text-sm font-semibold text-[#1F2328] dark:text-white tracking-wide">ASETU</h2>
+              <p className="text-xs text-[#656D76] dark:text-[#8B949E] mt-0.5">TIM 25</p>
             </div>
             <button
               onClick={onClose}

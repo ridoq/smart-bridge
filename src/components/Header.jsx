@@ -38,7 +38,7 @@ export default function Header({
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-3">
-            <span className="text-base font-semibold text-[#1F2328] dark:text-white tracking-tight">BRIMON</span>
+            <span className="text-base font-semibold text-[#1F2328] dark:text-white tracking-tight">ASETU</span>
             <span className="text-xs text-[#8C959F] dark:text-[#8B949E] hidden sm:inline">|</span>
             <span className="text-xs text-[#656D76] dark:text-[#8B949E] hidden sm:inline">Monitoring Struktur Jembatan</span>
           </div>

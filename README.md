@@ -1,4 +1,4 @@
-# BRIMON SHMS — React Application
+# ASETU SHMS — React Application
 
 Aplikasi Structural Health Monitoring System (SHMS) berbasis **React 18 + Vite + Tailwind CSS + Three.js + Chart.js** untuk **TIM 25 – AKRAL CATURA (IBDC 2027)**.
 

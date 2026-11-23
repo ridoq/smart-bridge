@@ -614,17 +614,8 @@ function Bridge3DViewerComponent({
     }
     dashesRef.current = dashesList;
 
-    // Curbs along the deck (Segmented with 40 segments to bend smoothly in lockstep with the deck)
-    const curbMat = new THREE.MeshStandardMaterial({ color: 0xb03a2e, roughness: 0.5, metalness: 0.3 });
-    const curbsList = [];
-    [-DECK_W / 2 + 0.15, DECK_W / 2 - 0.15].forEach(cz => {
-      const curbGeo = new THREE.BoxGeometry(SPAN_L, 0.45, 0.3, 40, 1, 1);
-      const curb = new THREE.Mesh(curbGeo, curbMat);
-      curb.position.set(0, BASE_Y + 0.6, cz);
-      scene.add(curb);
-      curbsList.push({ mesh: curb, origGeo: curbGeo.attributes.position.clone() });
-    });
-    curbsRef.current = curbsList;
+    // Curbs dieliminasi sesuai revisi: maket jembatan rangka tidak memiliki pembatas/garis merah di atas dek/plat aktuator
+    curbsRef.current = [];
 
     // 12. Overhead Lateral Wind Struts (Palang Atas: 4 at A0, A2, A4, A6 matching GAMTEK)
     const topJoints = ['A0', 'A2', 'A4', 'A6'];
@@ -1023,11 +1014,13 @@ function Bridge3DViewerComponent({
 
     scene.add(swivelBaseGroup);
 
-    // E. Heavy Steel Load Distribution Plate on Bridge Deck (Covering Bay B3 to B4)
-    // Span along X from B3 (-4.3) to B4 (+4.3): Length = 8.4 units
-    // Width along Z fitting cleanly between curbs: Width = 5.2 units
-    const plateLenX = 8.4;
-    const plateWidthZ = DECK_W - 0.7; // ~5.3 units
+    // E. Heavy Steel Load Distribution Plate (Mid-Span Loading Plate)
+    // Sesuai GAMTEK CAD (Kotak Hijau di Panel Tengah B3 - B4):
+    // 1. Panjang X < jarak B3-B4: plateLenX = 5.8 (B3=-4.3, B4=+4.3, menyisakan celah lega ~1.4 unit ke tiang vertikal)
+    // 2. Lebar Z melebihi kerangka: plateWidthZ = 7.6 (Kerangka DECK_W = 6.0, sayap plat menjulur keluar ke Z = +/- 3.8)
+    // 3. Lapisan vertikal: Kerangka (bawah) -> Plat (tengah) -> Jalan (atas), sayap dan tumpuan aktuator tampil jelas
+    const plateLenX = 5.8;
+    const plateWidthZ = 7.6;
     const plateGroup = new THREE.Group();
     plateGroup.position.set(0, BASE_Y + 0.44, 0);
 
@@ -1037,6 +1030,16 @@ function Bridge3DViewerComponent({
       spreaderBeamMat
     );
     plateGroup.add(plateMesh);
+
+    // Under-slung clamping plates resting directly on bottom chords & cross framing (Z = +/- 3.0)
+    [-3.0, 3.0].forEach(cz => {
+      const clampBlock = new THREE.Mesh(
+        regActGeo(new THREE.BoxGeometry(plateLenX * 0.9, 0.18, 0.45)),
+        darkSteelMat
+      );
+      clampBlock.position.set(0, -0.16, cz);
+      plateGroup.add(clampBlock);
+    });
 
     // Longitudinal & Transverse Stiffener Ribs on plate top
     [-plateWidthZ / 3, plateWidthZ / 3].forEach(rz => {
@@ -1057,7 +1060,24 @@ function Bridge3DViewerComponent({
       plateGroup.add(ribX);
     });
 
-    // Hazard yellow safety perimeter borders on B3 and B4 ends
+    // Protruding outer wing end flanges with hazard yellow safety perimeter (Z = +/- 3.8)
+    [-plateWidthZ / 2, plateWidthZ / 2].forEach(pz => {
+      const sideFlange = new THREE.Mesh(
+        regActGeo(new THREE.BoxGeometry(plateLenX, 0.24, 0.18)),
+        hazardYellowMat
+      );
+      sideFlange.position.set(0, 0, pz);
+      plateGroup.add(sideFlange);
+
+      // Heavy mounting bolts on the protruding wings
+      [-plateLenX * 0.35, 0, plateLenX * 0.35].forEach(bx => {
+        const wingBolt = new THREE.Mesh(anchorNutGeo, chromeMat);
+        wingBolt.position.set(bx, 0.16, pz);
+        plateGroup.add(wingBolt);
+      });
+    });
+
+    // Hazard yellow safety perimeter borders on B3 and B4 ends (X = +/- 2.9)
     [-plateLenX / 2, plateLenX / 2].forEach(px => {
       const endBorder = new THREE.Mesh(
         regActGeo(new THREE.BoxGeometry(0.18, 0.24, plateWidthZ)),
@@ -1065,16 +1085,6 @@ function Bridge3DViewerComponent({
       );
       endBorder.position.set(px, 0, 0);
       plateGroup.add(endBorder);
-    });
-
-    // Hazard yellow borders on side edges along curbs
-    [-plateWidthZ / 2, plateWidthZ / 2].forEach(pz => {
-      const sideBorder = new THREE.Mesh(
-        regActGeo(new THREE.BoxGeometry(plateLenX, 0.24, 0.16)),
-        hazardYellowMat
-      );
-      sideBorder.position.set(0, 0, pz);
-      plateGroup.add(sideBorder);
     });
 
     scene.add(plateGroup);
@@ -1483,7 +1493,7 @@ function Bridge3DViewerComponent({
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div className="flex items-center gap-3">
           <h2 className="text-sm font-semibold text-[#1F2328] dark:text-white">Visualisasi Struktur 3D</h2>
-          <span className="text-xs text-[#656D76] dark:text-[#8B949E]">Through Tied Arch Parker-Warren (Skala & Rasio GAMTEK 100%)</span>
+          {/* <span className="text-xs text-[#656D76] dark:text-[#8B949E]">Through Tied Arch Parker-Warren (Skala & Rasio GAMTEK 100%)</span> */}
         </div>
 
         {/* Minimal Controls */}

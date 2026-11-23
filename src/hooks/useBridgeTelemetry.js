@@ -196,11 +196,11 @@ export function useBridgeTelemetry() {
   const exportLogsCSV = useCallback(() => {
     const header = "Timestamp,Team,BridgeType,Status,Frequency_fn(Hz),Damage_D(%),Deflection(mm),Load(Ton),Vibration_RMS(m/s2),Pitch(deg)\n";
     const now = new Date().toISOString();
-    const row = `${now},TIM 25 AKRAL CATURA,Through Tied Arch Parker-Warren,${payload.status},${payload.frequency},${payload.damage_index},${payload.deflection},${payload.load_ton},${payload.vibration},${payload.pitch}\n`;
+    const row = `${now},TIM 25,Through Tied Arch Parker-Warren,${payload.status},${payload.frequency},${payload.damage_index},${payload.deflection},${payload.load_ton},${payload.vibration},${payload.pitch}\n`;
     const encodedUri = encodeURI("data:text/csv;charset=utf-8," + header + row);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `BRIMON_SHMS_Log_${Date.now()}.csv`);
+    link.setAttribute("download", `ASETU_SHMS_Log_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
