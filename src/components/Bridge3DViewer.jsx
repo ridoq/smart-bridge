@@ -11,6 +11,7 @@ const BASE_Y = STAND_H; // Height where bridge rests on the trestle stands
 
 function Bridge3DViewerComponent({
   deflection,
+  loadTon = 0.0,
   status,
   deformScale,
   onSetDeformScale
@@ -26,13 +27,19 @@ function Bridge3DViewerComponent({
   const deckMeshRef = useRef(null);
   const origDeckGeoRef = useRef(null);
   const sensorRef = useRef(null);
+  const actuatorRefs = useRef(null);
 
   const currentDefRef = useRef(deflection);
+  const currentLoadRef = useRef(loadTon);
   const currentScaleRef = useRef(deformScale);
 
   useEffect(() => {
     currentDefRef.current = deflection;
   }, [deflection]);
+
+  useEffect(() => {
+    currentLoadRef.current = loadTon;
+  }, [loadTon]);
 
   useEffect(() => {
     currentScaleRef.current = deformScale;
@@ -628,6 +635,266 @@ function Bridge3DViewerComponent({
     led.position.set(0, 0.2, 0);
     sensor.add(led);
 
+    // 14. Mid-Span Hydraulic Loading Actuator Assembly (Aktuator Pembebanan Tengah Bentang)
+    const actGeometries = [];
+    const actMaterials = [];
+    const regActGeo = (g) => { actGeometries.push(g); return g; };
+    const regActMat = (m) => { actMaterials.push(m); return m; };
+
+    // Actuator Materials
+    const reactionBeamMat = regActMat(new THREE.MeshStandardMaterial({
+      color: 0x22262c, // Heavy structural charcoal steel reaction gantry
+      roughness: 0.6,
+      metalness: 0.6
+    }));
+
+    const hazardYellowMat = regActMat(new THREE.MeshStandardMaterial({
+      color: 0xf5ba13, // Safety hazard golden yellow
+      roughness: 0.35,
+      metalness: 0.4
+    }));
+
+    const cylinderBodyMat = regActMat(new THREE.MeshStandardMaterial({
+      color: 0xe59714, // Heavy industrial hydraulic yellow
+      roughness: 0.35,
+      metalness: 0.55
+    }));
+
+    const chromePistonMat = regActMat(new THREE.MeshStandardMaterial({
+      color: 0xf0f4f8, // Polished chrome steel piston ram
+      roughness: 0.12,
+      metalness: 0.95
+    }));
+
+    const loadCellBodyMat = regActMat(new THREE.MeshStandardMaterial({
+      color: 0xb8c0cc, // Stainless steel load cell housing
+      roughness: 0.3,
+      metalness: 0.85
+    }));
+
+    const loadCellLedMat = regActMat(new THREE.MeshBasicMaterial({
+      color: 0x10b981 // Status LED (green idle, amber testing, red danger)
+    }));
+
+    const spreaderBeamMat = regActMat(new THREE.MeshStandardMaterial({
+      color: 0x32373e, // Heavy steel distribution plate
+      roughness: 0.55,
+      metalness: 0.65
+    }));
+
+    const rubberPadMat = regActMat(new THREE.MeshStandardMaterial({
+      color: 0x181a1d, // Neoprene elastomeric bearing pad
+      roughness: 0.9
+    }));
+
+    const forceArrowMat = regActMat(new THREE.MeshStandardMaterial({
+      color: 0xf5ba13, // Downward load force vector
+      emissive: 0xd97706,
+      emissiveIntensity: 0.6,
+      roughness: 0.2
+    }));
+
+    // A. Overhead Reaction Crosshead Beam (Mounted across top chord apex at X = 0)
+    const reactionBeam = new THREE.Mesh(
+      regActGeo(new THREE.BoxGeometry(0.72, 0.5, DECK_W + 0.8)),
+      reactionBeamMat
+    );
+    reactionBeam.position.set(0, BASE_Y + 9.45, 0);
+    scene.add(reactionBeam);
+
+    // Hazard yellow end caps on reaction beam
+    [-DECK_W / 2 - 0.35, DECK_W / 2 + 0.35].forEach(zc => {
+      const cap = new THREE.Mesh(
+        regActGeo(new THREE.BoxGeometry(0.74, 0.52, 0.15)),
+        hazardYellowMat
+      );
+      cap.position.set(0, BASE_Y + 9.45, zc);
+      scene.add(cap);
+    });
+
+    // B. Hydraulic Cylinder Housing (Fixed to overhead reaction beam)
+    const cylinderGroup = new THREE.Group();
+    cylinderGroup.position.set(0, BASE_Y + 7.2, 0);
+
+    // Main yellow cylinder barrel
+    const cylBarrel = new THREE.Mesh(
+      regActGeo(new THREE.CylinderGeometry(0.42, 0.42, 2.2, 16)),
+      cylinderBodyMat
+    );
+    cylinderGroup.add(cylBarrel);
+
+    // Top mounting flange
+    const cylTopFlange = new THREE.Mesh(
+      regActGeo(new THREE.CylinderGeometry(0.54, 0.54, 0.24, 16)),
+      reactionBeamMat
+    );
+    cylTopFlange.position.y = 1.15;
+    cylinderGroup.add(cylTopFlange);
+
+    // Bottom gland seal collar
+    const cylBotCollar = new THREE.Mesh(
+      regActGeo(new THREE.CylinderGeometry(0.48, 0.48, 0.22, 16)),
+      reactionBeamMat
+    );
+    cylBotCollar.position.y = -1.1;
+    cylinderGroup.add(cylBotCollar);
+
+    // Manifold block & hydraulic fittings
+    const manifold = new THREE.Mesh(
+      regActGeo(new THREE.BoxGeometry(0.24, 0.45, 0.32)),
+      reactionBeamMat
+    );
+    manifold.position.set(0.42, 0.2, 0);
+    cylinderGroup.add(manifold);
+
+    // Dual hydraulic hoses (black flexible high-pressure lines)
+    [-0.08, 0.08].forEach(zh => {
+      const hose = new THREE.Mesh(
+        regActGeo(new THREE.CylinderGeometry(0.04, 0.04, 1.4, 8)),
+        rubberPadMat
+      );
+      hose.position.set(0.55, 1.1, zh);
+      hose.rotation.z = -0.18;
+      cylinderGroup.add(hose);
+    });
+
+    scene.add(cylinderGroup);
+
+    // C. Piston Ram (Dynamic vertical stroke extending downwards)
+    const unitPistonGeo = regActGeo(new THREE.CylinderGeometry(0.22, 0.22, 1.0, 16));
+    const pistonMesh = new THREE.Mesh(unitPistonGeo, chromePistonMat);
+    pistonMesh.position.set(0, BASE_Y + 3.525, 0);
+    pistonMesh.scale.set(1, 4.95, 1);
+    scene.add(pistonMesh);
+
+    // D. Load Cell Transducer (Moves with deck deflection)
+    const loadCellGroup = new THREE.Group();
+    loadCellGroup.position.set(0, BASE_Y + 0.79, 0);
+
+    const loadCellPuck = new THREE.Mesh(
+      regActGeo(new THREE.CylinderGeometry(0.38, 0.38, 0.32, 16)),
+      loadCellBodyMat
+    );
+    loadCellGroup.add(loadCellPuck);
+
+    // LED status ring
+    const ledRing = new THREE.Mesh(
+      regActGeo(new THREE.CylinderGeometry(0.40, 0.40, 0.08, 16)),
+      loadCellLedMat
+    );
+    loadCellGroup.add(ledRing);
+
+    scene.add(loadCellGroup);
+
+    // E. Spreader Beam / Load Distribution Plate on Bridge Deck
+    const spreaderMesh = new THREE.Mesh(
+      regActGeo(new THREE.BoxGeometry(0.68, 0.28, 5.2)),
+      spreaderBeamMat
+    );
+    spreaderMesh.position.set(0, BASE_Y + 0.49, 0);
+    scene.add(spreaderMesh);
+
+    // Hazard yellow caps on spreader ends
+    [-2.6, 2.6].forEach(ze => {
+      const cap = new THREE.Mesh(
+        regActGeo(new THREE.BoxGeometry(0.70, 0.30, 0.14)),
+        hazardYellowMat
+      );
+      cap.position.set(0, 0, ze);
+      spreaderMesh.add(cap);
+    });
+
+    // F. Downward Dynamic Force Vector Arrow
+    const forceArrowGroup = new THREE.Group();
+    forceArrowGroup.position.set(0, BASE_Y + 2.4, 0);
+
+    const arrowShaft = new THREE.Mesh(
+      regActGeo(new THREE.CylinderGeometry(0.12, 0.12, 1.3, 12)),
+      forceArrowMat
+    );
+    arrowShaft.position.y = 0.55;
+    forceArrowGroup.add(arrowShaft);
+
+    const arrowTip = new THREE.Mesh(
+      regActGeo(new THREE.ConeGeometry(0.32, 0.6, 12)),
+      forceArrowMat
+    );
+    arrowTip.position.y = -0.3;
+    arrowTip.rotation.x = Math.PI; // Point downwards
+    forceArrowGroup.add(arrowTip);
+
+    forceArrowGroup.visible = false; // Initially hidden until load is applied
+    scene.add(forceArrowGroup);
+
+    // G. 3D Floating Digital Load Tag (HUD Billboard Sprite)
+    const actCanvas = document.createElement('canvas');
+    actCanvas.width = 512;
+    actCanvas.height = 160;
+    const actCtx = actCanvas.getContext('2d');
+    const actTexture = new THREE.CanvasTexture(actCanvas);
+
+    const updateActuatorSprite = (loadVal) => {
+      actCtx.clearRect(0, 0, 512, 160);
+
+      // Background rounded pill
+      actCtx.fillStyle = 'rgba(13, 17, 23, 0.94)';
+      actCtx.beginPath();
+      actCtx.roundRect(10, 10, 492, 140, 22);
+      actCtx.fill();
+
+      // Border colored by load level
+      let strokeColor = '#3fb950'; // Green normal
+      let textColor = '#3fb950';
+      if (loadVal >= 2.4) {
+        strokeColor = '#f85149'; // Red danger
+        textColor = '#f85149';
+      } else if (loadVal > 0) {
+        strokeColor = '#d29922'; // Amber warning / testing load
+        textColor = '#d29922';
+      }
+
+      actCtx.strokeStyle = strokeColor;
+      actCtx.lineWidth = 6;
+      actCtx.stroke();
+
+      // Title
+      actCtx.font = 'bold 22px Inter, sans-serif';
+      actCtx.fillStyle = '#8b949e';
+      actCtx.textAlign = 'center';
+      actCtx.fillText('AKTUATOR TENGAH BENTANG', 256, 48);
+
+      // Value
+      actCtx.font = 'bold 50px Inter, sans-serif';
+      actCtx.fillStyle = textColor;
+      actCtx.fillText(`P = ${loadVal.toFixed(2)} Ton`, 256, 114);
+
+      actTexture.needsUpdate = true;
+    };
+
+    updateActuatorSprite(loadTon);
+
+    const spriteMat = regActMat(new THREE.SpriteMaterial({
+      map: actTexture,
+      transparent: true
+    }));
+    const actuatorSprite = new THREE.Sprite(spriteMat);
+    actuatorSprite.scale.set(6.2, 1.9, 1.0);
+    actuatorSprite.position.set(0, BASE_Y + 9.8, 0);
+    scene.add(actuatorSprite);
+
+    // Save actuator references
+    actuatorRefs.current = {
+      piston: pistonMesh,
+      loadCell: loadCellGroup,
+      loadCellLedMat,
+      spreader: spreaderMesh,
+      forceArrow: forceArrowGroup,
+      forceArrowMat,
+      sprite: actuatorSprite,
+      updateSprite: updateActuatorSprite,
+      texture: actTexture
+    };
+
     // Window Resize Handler
     const handleResize = () => {
       if (!container) return;
@@ -644,10 +911,11 @@ function Bridge3DViewerComponent({
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
-    // 14. Animation Loop with Real-Time Deflection Bending (Zero-Allocation Performance)
+    // 15. Animation Loop with Real-Time Deflection Bending & Actuator Stroke Tracking
     let animId;
     let lastComputedDef = -999;
     let lastComputedScale = -999;
+    let lastComputedLoad = -999;
 
     const nodeCoords = {};
     rawNodes.forEach(n => {
@@ -667,6 +935,7 @@ function Bridge3DViewerComponent({
 
       const curDef = currentDefRef.current;
       const curScale = currentScaleRef.current;
+      const curLoad = currentLoadRef.current;
 
       // Update structural bending ONLY when deflection or scale changes
       if (Math.abs(curDef - lastComputedDef) > 0.005 || curScale !== lastComputedScale) {
@@ -724,8 +993,67 @@ function Bridge3DViewerComponent({
           deckMeshRef.current.geometry.computeVertexNormals();
         }
 
+        // 5. Update Mid-Span Hydraulic Actuator Piston Stroke & Deflection Tracking
+        if (actuatorRefs.current) {
+          const midSag = (curDef / 10.0) * (curScale * 0.38); // Mid-span deflection sag
+          const act = actuatorRefs.current;
+          if (act.spreader) {
+            act.spreader.position.y = BASE_Y + 0.49 - midSag;
+          }
+          if (act.loadCell) {
+            act.loadCell.position.y = BASE_Y + 0.79 - midSag;
+          }
+          if (act.piston) {
+            const topY = BASE_Y + 6.0;
+            const botY = BASE_Y + 0.95 - midSag;
+            const pDist = Math.max(0.1, topY - botY);
+            act.piston.scale.set(1, pDist, 1);
+            act.piston.position.y = (topY + botY) / 2;
+          }
+          if (act.forceArrow) {
+            act.forceArrow.position.y = BASE_Y + 2.4 - midSag;
+          }
+        }
+
         lastComputedDef = curDef;
         lastComputedScale = curScale;
+      }
+
+      // Check for loadTon changes to update Actuator Load HUD & Force Arrow
+      if (Math.abs(curLoad - lastComputedLoad) > 0.01) {
+        if (actuatorRefs.current) {
+          const act = actuatorRefs.current;
+          if (act.updateSprite) {
+            act.updateSprite(curLoad);
+          }
+          if (act.forceArrow) {
+            if (curLoad > 0) {
+              act.forceArrow.visible = true;
+              const arrowScale = Math.min(1.8, 0.7 + (curLoad / 2.4) * 0.7);
+              act.forceArrow.scale.set(arrowScale, arrowScale, arrowScale);
+              if (curLoad >= 2.4) {
+                act.forceArrowMat.color.setHex(0xef4444);
+                act.forceArrowMat.emissive.setHex(0xb91c1c);
+                act.loadCellLedMat.color.setHex(0xef4444);
+              } else {
+                act.forceArrowMat.color.setHex(0xf5ba13);
+                act.forceArrowMat.emissive.setHex(0xd97706);
+                act.loadCellLedMat.color.setHex(0xf5ba13);
+              }
+            } else {
+              act.forceArrow.visible = false;
+              act.loadCellLedMat.color.setHex(0x10b981);
+            }
+          }
+        }
+        lastComputedLoad = curLoad;
+      }
+
+      // Dynamic force arrow pulse during active loading
+      if (actuatorRefs.current && actuatorRefs.current.forceArrow && actuatorRefs.current.forceArrow.visible) {
+        const pulse = 1 + 0.05 * Math.sin(Date.now() * 0.009);
+        const baseScale = Math.min(1.8, 0.7 + (curLoad / 2.4) * 0.7);
+        actuatorRefs.current.forceArrow.scale.set(baseScale, baseScale * pulse, baseScale);
       }
 
       // Sensor Beacon Pulse
@@ -762,6 +1090,11 @@ function Bridge3DViewerComponent({
       envGeometries.forEach(g => g.dispose());
       envMaterials.forEach(m => m.dispose());
 
+      // Dispose all actuator geometries, materials & texture
+      actGeometries.forEach(g => g.dispose());
+      actMaterials.forEach(m => m.dispose());
+      actTexture.dispose();
+
       renderer.dispose();
       if (renderer.forceContextLoss) {
         renderer.forceContextLoss();
@@ -772,7 +1105,7 @@ function Bridge3DViewerComponent({
     };
   }, []);
 
-  // Preset Camera Angles (Framing Bridge, Land Terrain & River Gorge)
+  // Preset Camera Angles (Framing Bridge, Land Terrain & Actuator View)
   const setCameraView = (view) => {
     if (!cameraRef.current || !controlsRef.current) return;
     const cam = cameraRef.current;
@@ -786,6 +1119,10 @@ function Bridge3DViewerComponent({
       // Side Elevation (Profile showing arch spanning gorge between cliffs)
       cam.position.set(0, BASE_Y + 4.0, 76);
       ctrl.target.set(0, BASE_Y + 4.0, 0);
+    } else if (view === 'actuator') {
+      // Close-Up View directly on Mid-Span Hydraulic Actuator
+      cam.position.set(7.5, BASE_Y + 5.2, 9.2);
+      ctrl.target.set(0, BASE_Y + 3.2, 0);
     } else if (view === 'top') {
       // Bird's Eye Top View
       cam.position.set(0, BASE_Y + 65, 0.1);
@@ -803,7 +1140,7 @@ function Bridge3DViewerComponent({
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div className="flex items-center gap-3">
           <h2 className="text-sm font-semibold text-[#1F2328] dark:text-white">Visualisasi Struktur 3D</h2>
-          <span className="text-xs text-[#656D76] dark:text-[#8B949E]">Through Tied Arch Parker-Warren (100% Desain Asli)</span>
+          <span className="text-xs text-[#656D76] dark:text-[#8B949E]">Through Tied Arch Parker-Warren (Uji Beban Aktuator Tengah Bentang)</span>
         </div>
 
         {/* Minimal Controls */}
@@ -823,6 +1160,13 @@ function Bridge3DViewerComponent({
               title="Elevasi Samping Murni Sesuai Gambar 1"
             >
               Elevasi
+            </button>
+            <button
+              onClick={() => setCameraView('actuator')}
+              className="px-2.5 py-1 rounded-md text-[#656D76] dark:text-[#8B949E] hover:text-[#1F2328] dark:hover:text-white hover:bg-white dark:hover:bg-[#21262D] transition font-medium"
+              title="Fokus Detail Aktuator Pembebanan Tengah Bentang"
+            >
+              Aktuator
             </button>
             <button
               onClick={() => setCameraView('top')}
@@ -872,8 +1216,10 @@ function Bridge3DViewerComponent({
         ref={mountRef}
         className="relative w-full h-[410px] sm:h-[460px] bg-[#12151a] rounded-lg border border-[#D0D7DE] dark:border-[#21262D] overflow-hidden cursor-grab active:cursor-grabbing"
       >
-        <div className="absolute bottom-3 left-3 bg-white/90 dark:bg-[#161B22]/90 border border-[#D0D7DE] dark:border-[#30363D] px-3 py-1.5 rounded-lg text-xs text-[#1F2328] dark:text-[#C9D1D9] backdrop-blur-sm pointer-events-none shadow-xs">
-          Status: <span className="text-[#1F2328] dark:text-white font-medium">{status} ({deflection.toFixed(2)} mm)</span>
+        <div className="absolute bottom-3 left-3 bg-white/90 dark:bg-[#161B22]/90 border border-[#D0D7DE] dark:border-[#30363D] px-3 py-1.5 rounded-lg text-xs text-[#1F2328] dark:text-[#C9D1D9] backdrop-blur-sm pointer-events-none shadow-xs flex items-center gap-2">
+          <span>Status: <strong className="text-[#1F2328] dark:text-white font-medium">{status} ({deflection.toFixed(2)} mm)</strong></span>
+          <span className="text-[#D0D7DE] dark:text-[#30363D]">·</span>
+          <span>Beban Aktuator: <strong className="text-[#1F2328] dark:text-white font-medium">{loadTon.toFixed(2)} Ton</strong></span>
         </div>
 
         <div className="absolute bottom-3 right-3 text-[11px] text-[#8C959F] dark:text-[#6E7681] pointer-events-none hidden sm:block">

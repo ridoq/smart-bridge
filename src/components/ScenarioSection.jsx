@@ -29,8 +29,8 @@ function ScenarioSectionComponent({
       {/* Testing Scenarios (8 cols) */}
       <div className="lg:col-span-8 bg-white dark:bg-[#161B22] border border-[#D0D7DE] dark:border-[#30363D] rounded-xl p-5 space-y-3 shadow-xs transition">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-semibold text-[#1F2328] dark:text-white">Simulasi Pengujian Beban</h3>
-          <span className="text-xs text-[#656D76] dark:text-[#8B949E]">Pilih skenario untuk demo respons jembatan</span>
+          <h3 className="text-xs font-semibold text-[#1F2328] dark:text-white">Simulasi Pembebanan Aktuator Hidrolik</h3>
+          <span className="text-xs text-[#656D76] dark:text-[#8B949E]">Uji tekan vertikal di tengah bentang jembatan</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -43,8 +43,8 @@ function ScenarioSectionComponent({
                 : 'border-[#D0D7DE] dark:border-[#30363D]'
             }`}
           >
-            <div className="text-xs font-semibold text-[#1F2328] dark:text-white">1. Baseline (Tanpa Beban)</div>
-            <div className="text-xs text-[#656D76] dark:text-[#8B949E] mt-1">fn = 4.88 Hz · δ = 0.85 mm · D = 0.0%</div>
+            <div className="text-xs font-semibold text-[#1F2328] dark:text-white">1. Baseline (Tanpa Beban Aktuator)</div>
+            <div className="text-xs text-[#656D76] dark:text-[#8B949E] mt-1">P = 0.00 Ton · fn = 4.88 Hz · δ = 0.85 mm</div>
           </button>
 
           {/* Scenario 2 */}
@@ -56,8 +56,8 @@ function ScenarioSectionComponent({
                 : 'border-[#D0D7DE] dark:border-[#30363D]'
             }`}
           >
-            <div className="text-xs font-semibold text-[#1F2328] dark:text-white">2. Beban Ringan (0.45 Ton)</div>
-            <div className="text-xs text-[#656D76] dark:text-[#8B949E] mt-1">fn = 4.82 Hz · δ = 2.10 mm · D = 1.2%</div>
+            <div className="text-xs font-semibold text-[#1F2328] dark:text-white">2. Beban Ringan Aktuator (0.45 Ton)</div>
+            <div className="text-xs text-[#656D76] dark:text-[#8B949E] mt-1">P = 0.45 Ton · fn = 4.82 Hz · δ = 2.10 mm</div>
           </button>
 
           {/* Scenario 3 */}
@@ -69,8 +69,8 @@ function ScenarioSectionComponent({
                 : 'border-[#D0D7DE] dark:border-[#30363D]'
             }`}
           >
-            <div className="text-xs font-semibold text-[#1F2328] dark:text-white">3. Uji Beban Target (1.70 Ton)</div>
-            <div className="text-xs text-[#656D76] dark:text-[#8B949E] mt-1">Target δ = 4.998 mm · fn = 4.55 Hz · D = 6.7%</div>
+            <div className="text-xs font-semibold text-[#1F2328] dark:text-white">3. Uji Beban Target Panitia (1.70 Ton)</div>
+            <div className="text-xs text-[#656D76] dark:text-[#8B949E] mt-1">P = 1.70 Ton · Target δ = 4.998 mm · D = 6.7%</div>
           </button>
 
           {/* Scenario 4 */}
@@ -82,8 +82,8 @@ function ScenarioSectionComponent({
                 : 'border-[#D0D7DE] dark:border-[#30363D]'
             }`}
           >
-            <div className="text-xs font-semibold text-[#1F2328] dark:text-white">4. Overload Kritis (&gt; 2.40 Ton)</div>
-            <div className="text-xs text-[#656D76] dark:text-[#8B949E] mt-1">Lendutan 8.60 mm · fn = 3.85 Hz · D = 21.1%</div>
+            <div className="text-xs font-semibold text-[#1F2328] dark:text-white">4. Overload Aktuator Kritis (&gt; 2.40 Ton)</div>
+            <div className="text-xs text-[#656D76] dark:text-[#8B949E] mt-1">P = 2.45 Ton · Lendutan 8.60 mm · D = 21.1%</div>
           </button>
         </div>
       </div>

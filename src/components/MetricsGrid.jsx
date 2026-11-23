@@ -56,9 +56,9 @@ function MetricsGridComponent({ payload }) {
         </div>
       </div>
 
-      {/* Card 3: Beban Uji */}
+      {/* Card 3: Beban Uji Aktuator */}
       <div className="bg-white dark:bg-[#161B22] border border-[#D0D7DE] dark:border-[#30363D] rounded-xl p-5 hover:border-[#AFB8C1] dark:hover:border-[#484F58] shadow-xs transition">
-        <div className="text-xs font-medium text-[#656D76] dark:text-[#8B949E]">Beban Uji Terpasang</div>
+        <div className="text-xs font-medium text-[#656D76] dark:text-[#8B949E]">Beban Uji Aktuator Hidrolik</div>
         <div className="mt-2 flex items-baseline gap-1.5">
           <span className="text-3xl font-semibold text-[#1F2328] dark:text-white tracking-tight tabular-nums">
             {payload.load_ton.toFixed(2)}
@@ -66,8 +66,8 @@ function MetricsGridComponent({ payload }) {
           <span className="text-xs text-[#656D76] dark:text-[#8B949E]">Ton</span>
         </div>
         <div className="mt-3 flex items-center justify-between text-xs text-[#656D76] dark:text-[#8B949E] border-t border-[#E1E4E8] dark:border-[#21262D] pt-2.5">
-          <span>Target Uji 1.70 Ton</span>
-          <span className="text-[#656D76] dark:text-[#8B949E]">Maks 2.40 Ton</span>
+          <span>Tengah Bentang</span>
+          <span className="text-[#656D76] dark:text-[#8B949E]">Target 1.70 Ton</span>
         </div>
       </div>
 

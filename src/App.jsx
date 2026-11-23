@@ -87,6 +87,7 @@ export default function App() {
         {/* 3D Model Viewport */}
         <Bridge3DViewer
           deflection={payload.deflection}
+          loadTon={payload.load_ton}
           status={payload.status}
           deformScale={deformScale}
           onSetDeformScale={setDeformScale}
