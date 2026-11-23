@@ -78,10 +78,10 @@ function Bridge3DViewerComponent({
 
     // 2. Camera (Perspective with low FOV for photographic depth)
     const camera = new THREE.PerspectiveCamera(34, width / height, 0.1, 1000);
-    camera.position.set(34, BASE_Y + 7.0, 42);
+    camera.position.set(38, BASE_Y + 8.5, 46);
     cameraRef.current = camera;
 
-    // 3. Renderer with Optimized Settings
+    // 3. Renderer with Optimized Settings (Shadow Map Disabled for Maximum Clarity & Performance)
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: false,
@@ -89,8 +89,7 @@ function Bridge3DViewerComponent({
     });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFShadowMap;
+    renderer.shadowMap.enabled = false; // Zero shadows per user request (eliminates all dark deck artifacts & saves GPU)
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     container.appendChild(renderer.domElement);
@@ -99,39 +98,294 @@ function Bridge3DViewerComponent({
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.06;
-    controls.maxPolarAngle = Math.PI / 2 - 0.02; // Floor boundary
-    controls.minDistance = 6;
-    controls.maxDistance = 160;
-    controls.target.set(0, BASE_Y + 3.2, 0);
+    controls.maxPolarAngle = Math.PI / 2 - 0.01; // Can't dip below horizon
+    controls.minDistance = 5;
+    controls.maxDistance = 220;
+    controls.target.set(0, BASE_Y + 2.5, 0);
     controlsRef.current = controls;
 
-    // 5. Lighting (Sunset Golden Hour)
-    const hemiLight = new THREE.HemisphereLight(0xffdfcb, 0x14181f, 0.9);
+    // 5. Lighting (Clean, Warm, Shadowless Architectural Illumination)
+    const hemiLight = new THREE.HemisphereLight(0xfffaed, 0x3d444e, 1.25);
     scene.add(hemiLight);
 
-    const sunLight = new THREE.DirectionalLight(0xffdfb3, 1.7);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
+    scene.add(ambientLight);
+
+    const sunLight = new THREE.DirectionalLight(0xffeedd, 1.35);
     sunLight.position.set(-32, 34, 28);
-    sunLight.castShadow = true;
-    sunLight.shadow.mapSize.width = 1024;
-    sunLight.shadow.mapSize.height = 1024;
-    sunLight.shadow.bias = -0.0003;
     scene.add(sunLight);
 
-    const sunsetFill = new THREE.DirectionalLight(0xe59779, 0.55);
+    const sunsetFill = new THREE.DirectionalLight(0xf2a688, 0.7);
     sunsetFill.position.set(35, 16, -25);
     scene.add(sunsetFill);
 
-    // 6. Ground Studio Floor (Pure Dark Matte as in Image 1 & 2)
-    const floorGeo = new THREE.PlaneGeometry(280, 280);
-    const floorMat = new THREE.MeshStandardMaterial({
-      color: 0x0c0e12,
+    const frontFill = new THREE.DirectionalLight(0xffffff, 0.35);
+    frontFill.position.set(0, 18, 45);
+    scene.add(frontFill);
+
+    // 6. Natural Land Terrain & River Environment (Daratan & Sungai)
+    const envGeometries = [];
+    const envMaterials = [];
+
+    const regEnvGeo = (geo) => {
+      envGeometries.push(geo);
+      return geo;
+    };
+    const regEnvMat = (mat) => {
+      envMaterials.push(mat);
+      return mat;
+    };
+
+    // Environment Materials
+    const grassMat = regEnvMat(new THREE.MeshStandardMaterial({
+      color: 0x3b6e44, // Lush natural green grass
       roughness: 0.85,
+      metalness: 0.08
+    }));
+
+    const slopeGrassMat = regEnvMat(new THREE.MeshStandardMaterial({
+      color: 0x335e3a, // Deep green slope grass
+      roughness: 0.9,
+      metalness: 0.05
+    }));
+
+    const cliffRockMat = regEnvMat(new THREE.MeshStandardMaterial({
+      color: 0x5c5347, // Rocky earthen cut cliff
+      roughness: 0.95,
+      metalness: 0.1
+    }));
+
+    const concreteMat = regEnvMat(new THREE.MeshStandardMaterial({
+      color: 0x9ca2a8, // Reinforced concrete bridge abutments
+      roughness: 0.65,
       metalness: 0.15
-    });
-    const floor = new THREE.Mesh(floorGeo, floorMat);
-    floor.rotation.x = -Math.PI / 2;
-    floor.receiveShadow = true;
-    scene.add(floor);
+    }));
+
+    const bearingSteelMat = regEnvMat(new THREE.MeshStandardMaterial({
+      color: 0x2b2e33, // Heavy steel elastomeric bearing plate
+      roughness: 0.35,
+      metalness: 0.75
+    }));
+
+    const approachRoadMat = regEnvMat(new THREE.MeshStandardMaterial({
+      color: 0x2d3237, // Smooth asphalt highway approach road
+      roughness: 0.7,
+      metalness: 0.25
+    }));
+
+    const waterMat = regEnvMat(new THREE.MeshStandardMaterial({
+      color: 0x1f667d, // Scenic river water
+      roughness: 0.22,
+      metalness: 0.35,
+      transparent: true,
+      opacity: 0.94
+    }));
+
+    const riverBedMat = regEnvMat(new THREE.MeshStandardMaterial({
+      color: 0x1d2720, // Dark rocky riverbed
+      roughness: 0.95
+    }));
+
+    const roadLineMat = regEnvMat(new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    const roadEdgeMat = regEnvMat(new THREE.MeshBasicMaterial({ color: 0xf5ba13 }));
+    const landCurbMat = regEnvMat(new THREE.MeshStandardMaterial({ color: 0x757c85, roughness: 0.5 }));
+    const treeTrunkMat = regEnvMat(new THREE.MeshStandardMaterial({ color: 0x4a3627, roughness: 0.9 }));
+    const foliageMat1 = regEnvMat(new THREE.MeshStandardMaterial({ color: 0x285432, roughness: 0.85 }));
+    const foliageMat2 = regEnvMat(new THREE.MeshStandardMaterial({ color: 0x366e44, roughness: 0.85 }));
+
+    // A. River & Riverbed
+    const waterGeo = regEnvGeo(new THREE.PlaneGeometry(300, 220));
+    const waterMesh = new THREE.Mesh(waterGeo, waterMat);
+    waterMesh.rotation.x = -Math.PI / 2;
+    waterMesh.position.set(0, 0.9, 0);
+    scene.add(waterMesh);
+
+    const riverBedGeo = regEnvGeo(new THREE.PlaneGeometry(320, 240));
+    const riverBedMesh = new THREE.Mesh(riverBedGeo, riverBedMat);
+    riverBedMesh.rotation.x = -Math.PI / 2;
+    riverBedMesh.position.set(0, 0.05, 0);
+    scene.add(riverBedMesh);
+
+    // B. Reusable geometries for trees & hills
+    const trunkGeo = regEnvGeo(new THREE.CylinderGeometry(0.22, 0.3, 1.8, 6));
+    const coneGeo1 = regEnvGeo(new THREE.ConeGeometry(1.6, 2.2, 6));
+    const coneGeo2 = regEnvGeo(new THREE.ConeGeometry(1.3, 1.9, 6));
+    const coneGeo3 = regEnvGeo(new THREE.ConeGeometry(0.9, 1.5, 6));
+    const hillGeo = regEnvGeo(new THREE.ConeGeometry(16, 9, 8));
+
+    // C. Builder for Land Banks (Left: side = -1, Right: side = +1)
+    const buildLandBank = (side) => {
+      const bankGroup = new THREE.Group();
+      const startX = side * 25.0; // Where bridge terminates
+      const farX = side * 125.0;   // Extends out to horizon
+      const bankLen = Math.abs(farX - startX); // 100 units
+      const midBankX = (startX + farX) / 2;
+      const bankWidth = 140;
+
+      // 1. Main Land Plateau (Upper ground at BASE_Y)
+      const plateauGeo = regEnvGeo(new THREE.BoxGeometry(bankLen, BASE_Y, bankWidth));
+      const plateau = new THREE.Mesh(plateauGeo, grassMat);
+      plateau.position.set(midBankX, BASE_Y / 2, 0);
+      bankGroup.add(plateau);
+
+      // 2. Sloping River Gorge Bank / Embankment
+      const slopeW = 7.5;
+      const slopeGeo = regEnvGeo(new THREE.BoxGeometry(slopeW, BASE_Y + 0.5, bankWidth));
+      const slope = new THREE.Mesh(slopeGeo, cliffRockMat);
+      slope.position.set(startX - side * (slopeW / 2 - 2.0), BASE_Y / 2 - 0.2, 0);
+      slope.rotation.z = side * 0.16;
+      bankGroup.add(slope);
+
+      // 3. Green Grass Layer on the Top Shoulder of the Slope
+      const slopeGrassGeo = regEnvGeo(new THREE.BoxGeometry(slopeW * 0.9, 0.3, bankWidth));
+      const slopeGrass = new THREE.Mesh(slopeGrassGeo, slopeGrassMat);
+      slopeGrass.position.set(startX - side * (slopeW / 2 - 1.8), BASE_Y - 0.1, 0);
+      slopeGrass.rotation.z = side * 0.14;
+      bankGroup.add(slopeGrass);
+
+      // 4. Riverbank Grass Verge along the water edge
+      const vergeGeo = regEnvGeo(new THREE.BoxGeometry(4.5, 0.7, bankWidth));
+      const verge = new THREE.Mesh(vergeGeo, grassMat);
+      verge.position.set(startX + side * 1.5, 0.85, 0);
+      bankGroup.add(verge);
+
+      // 5. Approach Road extending from Bridge Deck
+      const roadGeo = regEnvGeo(new THREE.PlaneGeometry(bankLen, DECK_W));
+      const road = new THREE.Mesh(roadGeo, approachRoadMat);
+      road.rotation.x = -Math.PI / 2;
+      road.position.set(midBankX, BASE_Y + 0.36, 0);
+      bankGroup.add(road);
+
+      // White Center Dashed Markings on Road
+      for (let rx = 3.5; rx < bankLen - 4; rx += 4.5) {
+        const lineX = startX + side * rx;
+        const dash = new THREE.Mesh(
+          regEnvGeo(new THREE.PlaneGeometry(2.2, 0.16)),
+          roadLineMat
+        );
+        dash.rotation.x = -Math.PI / 2;
+        dash.position.set(lineX, BASE_Y + 0.38, 0);
+        bankGroup.add(dash);
+      }
+
+      // Yellow Shoulder Edge Lines
+      [-DECK_W / 2 + 0.35, DECK_W / 2 - 0.35].forEach(zEdge => {
+        const edgeLine = new THREE.Mesh(
+          regEnvGeo(new THREE.PlaneGeometry(bankLen, 0.14)),
+          roadEdgeMat
+        );
+        edgeLine.rotation.x = -Math.PI / 2;
+        edgeLine.position.set(midBankX, BASE_Y + 0.38, zEdge);
+        bankGroup.add(edgeLine);
+      });
+
+      // Concrete Curbs / Barriers along Approach Road
+      [-DECK_W / 2 + 0.1, DECK_W / 2 - 0.1].forEach(zCurb => {
+        const curb = new THREE.Mesh(
+          regEnvGeo(new THREE.BoxGeometry(bankLen, 0.45, 0.24)),
+          landCurbMat
+        );
+        curb.position.set(midBankX, BASE_Y + 0.56, zCurb);
+        bankGroup.add(curb);
+      });
+
+      // 6. Reinforced Concrete Bridge Abutment (Kepala Jembatan)
+      const abutGroup = new THREE.Group();
+      abutGroup.position.set(startX, 0, 0);
+
+      // Heavy Concrete Breastwall
+      const abutWall = new THREE.Mesh(
+        regEnvGeo(new THREE.BoxGeometry(3.6, BASE_Y + 0.2, DECK_W + 2.2)),
+        concreteMat
+      );
+      abutWall.position.set(side * 1.6, (BASE_Y + 0.2) / 2, 0);
+      abutGroup.add(abutWall);
+
+      // Bearing Pedestals under B0 Shoes (Z = +- DECK_W/2)
+      [-DECK_W / 2, DECK_W / 2].forEach(zShoe => {
+        const ped = new THREE.Mesh(
+          regEnvGeo(new THREE.BoxGeometry(1.8, 0.7, 1.5)),
+          concreteMat
+        );
+        ped.position.set(0, BASE_Y - 0.35, zShoe);
+        abutGroup.add(ped);
+
+        // Heavy Steel Bearing Plate on which the bridge shoe sits
+        const bearingPlate = new THREE.Mesh(
+          regEnvGeo(new THREE.BoxGeometry(1.3, 0.16, 1.2)),
+          bearingSteelMat
+        );
+        bearingPlate.position.set(0, BASE_Y + 0.08, zShoe);
+        abutGroup.add(bearingPlate);
+      });
+
+      // Angled Retaining Wingwalls
+      [-DECK_W / 2 - 1.2, DECK_W / 2 + 1.2].forEach(zWing => {
+        const wing = new THREE.Mesh(
+          regEnvGeo(new THREE.BoxGeometry(5.8, BASE_Y + 0.1, 0.65)),
+          concreteMat
+        );
+        wing.position.set(side * 2.8, (BASE_Y + 0.1) / 2, zWing);
+        wing.rotation.y = side * 0.14;
+        abutGroup.add(wing);
+      });
+
+      bankGroup.add(abutGroup);
+
+      // 7. Scenic Pine Trees on the Land (scattered along grass shoulders)
+      const treeCoords = [
+        { x: startX + side * 14, z: 12, s: 1.15 },
+        { x: startX + side * 22, z: 18, s: 1.45 },
+        { x: startX + side * 34, z: 14, s: 1.25 },
+        { x: startX + side * 44, z: 24, s: 1.65 },
+        { x: startX + side * 56, z: 16, s: 1.35 },
+        { x: startX + side * 16, z: -14, s: 1.2 },
+        { x: startX + side * 26, z: -22, s: 1.55 },
+        { x: startX + side * 38, z: -16, s: 1.3 },
+        { x: startX + side * 50, z: -26, s: 1.7 },
+        { x: startX + side * 62, z: -18, s: 1.4 }
+      ];
+
+      treeCoords.forEach(tc => {
+        const tree = new THREE.Group();
+        tree.position.set(tc.x, BASE_Y, tc.z);
+        tree.scale.set(tc.s, tc.s, tc.s);
+
+        const trunk = new THREE.Mesh(trunkGeo, treeTrunkMat);
+        trunk.position.y = 0.9;
+        tree.add(trunk);
+
+        const c1 = new THREE.Mesh(coneGeo1, foliageMat1);
+        c1.position.y = 2.4;
+        tree.add(c1);
+
+        const c2 = new THREE.Mesh(coneGeo2, foliageMat2);
+        c2.position.y = 3.6;
+        tree.add(c2);
+
+        const c3 = new THREE.Mesh(coneGeo3, foliageMat1);
+        c3.position.y = 4.6;
+        tree.add(c3);
+
+        bankGroup.add(tree);
+      });
+
+      // 8. Background Rolling Hills
+      [
+        { x: startX + side * 48, z: 38, sx: 1.6, sy: 0.9, sz: 1.5 },
+        { x: startX + side * 68, z: -44, sx: 1.8, sy: 1.1, sz: 1.7 }
+      ].forEach(hc => {
+        const hill = new THREE.Mesh(hillGeo, grassMat);
+        hill.position.set(hc.x, BASE_Y + 3.0, hc.z);
+        hill.scale.set(hc.sx, hc.sy, hc.sz);
+        bankGroup.add(hill);
+      });
+
+      scene.add(bankGroup);
+    };
+
+    buildLandBank(-1); // Left Landmass
+    buildLandBank(1);  // Right Landmass
 
     // 7. Materials matching Exact Civil Render
     const trussMat = new THREE.MeshStandardMaterial({
@@ -152,100 +406,13 @@ function Bridge3DViewerComponent({
       metalness: 0.85
     });
 
-    const standMat = new THREE.MeshStandardMaterial({
-      color: 0x23201d, // Dark Bronze Charcoal Steel
-      roughness: 0.6,
-      metalness: 0.55
-    });
-
-    const padMat = new THREE.MeshStandardMaterial({
-      color: 0x8a4e3b, // Copper/Bronze Bearing Plate
-      roughness: 0.45,
-      metalness: 0.5
-    });
-
     const deckMat = new THREE.MeshStandardMaterial({
       color: 0xc0392b, // Reddish Roadway / Running Deck
       roughness: 0.6,
       metalness: 0.35
     });
 
-    // 8. Build Trestle Support Stands (Trapezoidal 4-Leg Steel Stands in Images)
-    const buildTrestleStand = (posX) => {
-      const standGroup = new THREE.Group();
-      standGroup.position.set(posX, 0, 0);
-
-      const topW = 9.0;
-      const topD = 8.5;
-      const botW = 12.5;
-      const botD = 11.0;
-      const legR = 0.36;
-
-      // Top Platform Plate
-      const topPlate = new THREE.Mesh(
-        new THREE.BoxGeometry(topW, 0.4, topD),
-        standMat
-      );
-      topPlate.position.set(0, STAND_H - 0.2, 0);
-      topPlate.castShadow = true;
-      topPlate.receiveShadow = true;
-      standGroup.add(topPlate);
-
-      // Bearing Surface Pad on Top
-      const pad = new THREE.Mesh(
-        new THREE.BoxGeometry(topW * 0.75, 0.22, DECK_W + 0.6),
-        padMat
-      );
-      pad.position.set(0, STAND_H + 0.11, 0);
-      pad.castShadow = true;
-      pad.receiveShadow = true;
-      standGroup.add(pad);
-
-      // Helper for stand tubular struts
-      const addTubularStrut = (p1, p2, r, mat) => {
-        const dist = p1.distanceTo(p2);
-        const cyl = new THREE.Mesh(new THREE.CylinderGeometry(r, r, dist, 8), mat);
-        cyl.position.copy(p1).add(p2).multiplyScalar(0.5);
-        cyl.quaternion.setFromUnitVectors(
-          new THREE.Vector3(0, 1, 0),
-          new THREE.Vector3().subVectors(p2, p1).normalize()
-        );
-        cyl.castShadow = true;
-        standGroup.add(cyl);
-      };
-
-      // 4 Inclined Trapezoidal Legs
-      const corners = [
-        { tx: -topW / 2 + 0.4, tz: -topD / 2 + 0.4, bx: -botW / 2, bz: -botD / 2 },
-        { tx: topW / 2 - 0.4, tz: -topD / 2 + 0.4, bx: botW / 2, bz: -botD / 2 },
-        { tx: -topW / 2 + 0.4, tz: topD / 2 - 0.4, bx: -botW / 2, bz: botD / 2 },
-        { tx: topW / 2 - 0.4, tz: topD / 2 - 0.4, bx: botW / 2, bz: botD / 2 }
-      ];
-
-      corners.forEach(c => {
-        const topPt = new THREE.Vector3(c.tx, STAND_H - 0.4, c.tz);
-        const botPt = new THREE.Vector3(c.bx, 0.2, c.bz);
-        addTubularStrut(topPt, botPt, legR, standMat);
-      });
-
-      // Bottom Rectangular Tubular Base Frame on the Floor
-      const bPts = [
-        new THREE.Vector3(-botW / 2, 0.2, -botD / 2),
-        new THREE.Vector3(botW / 2, 0.2, -botD / 2),
-        new THREE.Vector3(botW / 2, 0.2, botD / 2),
-        new THREE.Vector3(-botW / 2, 0.2, botD / 2)
-      ];
-      for (let i = 0; i < 4; i++) {
-        addTubularStrut(bPts[i], bPts[(i + 1) % 4], legR * 0.9, standMat);
-      }
-
-      scene.add(standGroup);
-    };
-
-    buildTrestleStand(-SPAN_L / 2);
-    buildTrestleStand(SPAN_L / 2);
-
-    // 9. Exact Topology of Parker-Warren Truss (100% Matching Uploaded Images)
+    // 8. Exact Topology of Parker-Warren Truss (100% Matching Uploaded Images)
     // Primary Nodes with Flat Apex Crest
     const rawNodes = [
       // Bottom Chord
@@ -321,8 +488,6 @@ function Bridge3DViewerComponent({
     const unitBoxGeo = new THREE.BoxGeometry(1, 1, 1);
     const createTrussBeam = (n1, n2, z, width = 0.32, depth = 0.38) => {
       const mesh = new THREE.Mesh(unitBoxGeo, trussMat);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
       scene.add(mesh);
       return { mesh, n1, n2, z, width, depth };
     };
@@ -339,7 +504,6 @@ function Bridge3DViewerComponent({
         new THREE.BoxGeometry(plateSize, plateSize * 0.85, 0.44),
         gussetMat
       );
-      plateMesh.castShadow = true;
       plateGroup.add(plateMesh);
 
       // Cluster of Black Bolts
@@ -403,8 +567,6 @@ function Bridge3DViewerComponent({
         new THREE.BoxGeometry(0.42, 0.55, DECK_W + 0.6),
         trussMat
       );
-      fbMesh.castShadow = true;
-      fbMesh.receiveShadow = true;
       scene.add(fbMesh);
       floorBeams.push({ mesh: fbMesh, x: bj.x });
     });
@@ -414,8 +576,6 @@ function Bridge3DViewerComponent({
     const deckGeo = new THREE.BoxGeometry(SPAN_L, 0.35, DECK_W - 0.2, 40, 1, 2);
     const deckMesh = new THREE.Mesh(deckGeo, deckMat);
     deckMesh.position.set(0, BASE_Y + 0.35, 0);
-    deckMesh.castShadow = true;
-    deckMesh.receiveShadow = true;
     scene.add(deckMesh);
     deckMeshRef.current = deckMesh;
     origDeckGeoRef.current = deckGeo.attributes.position.clone();
@@ -448,7 +608,6 @@ function Bridge3DViewerComponent({
         );
         strut.rotation.x = Math.PI / 2;
         strut.position.set(node.x, BASE_Y + node.y, 0);
-        strut.castShadow = true;
         scene.add(strut);
       }
     });
@@ -590,18 +749,18 @@ function Bridge3DViewerComponent({
       skyTexture.dispose();
       unitBoxGeo.dispose();
       unitBoltGeo.dispose();
-      floorGeo.dispose();
-      floorMat.dispose();
       deckGeo.dispose();
       deckMat.dispose();
       trussMat.dispose();
       gussetMat.dispose();
       boltMat.dispose();
-      standMat.dispose();
-      padMat.dispose();
       curbMat.dispose();
       lineMat.dispose();
       sensorMat.dispose();
+
+      // Dispose all environment geometries & materials
+      envGeometries.forEach(g => g.dispose());
+      envMaterials.forEach(m => m.dispose());
 
       renderer.dispose();
       if (renderer.forceContextLoss) {
@@ -613,24 +772,24 @@ function Bridge3DViewerComponent({
     };
   }, []);
 
-  // Preset Camera Angles (Tailored to Match Image 1 & 2 Perfectly)
+  // Preset Camera Angles (Framing Bridge, Land Terrain & River Gorge)
   const setCameraView = (view) => {
     if (!cameraRef.current || !controlsRef.current) return;
     const cam = cameraRef.current;
     const ctrl = controlsRef.current;
 
     if (view === 'proposal') {
-      // 3/4 Perspective Angle (Exact Match with Image 2)
-      cam.position.set(34, BASE_Y + 7.5, 40);
-      ctrl.target.set(-1.5, BASE_Y + 3.0, 0);
+      // 3/4 Perspective Angle (Showing full bridge spanning between the two landmasses)
+      cam.position.set(38, BASE_Y + 8.5, 46);
+      ctrl.target.set(0, BASE_Y + 2.5, 0);
     } else if (view === 'elevation') {
-      // Side View (Exact Match with Image 1)
-      cam.position.set(0, BASE_Y + 3.8, 62);
-      ctrl.target.set(0, BASE_Y + 3.8, 0);
+      // Side Elevation (Profile showing arch spanning gorge between cliffs)
+      cam.position.set(0, BASE_Y + 4.0, 76);
+      ctrl.target.set(0, BASE_Y + 4.0, 0);
     } else if (view === 'top') {
       // Bird's Eye Top View
-      cam.position.set(0, BASE_Y + 50, 0.1);
-      ctrl.target.set(0, BASE_Y + 2.0, 0);
+      cam.position.set(0, BASE_Y + 65, 0.1);
+      ctrl.target.set(0, BASE_Y + 1.0, 0);
     } else if (view === 'sensor') {
       // Close up on IoT Sensor Module
       cam.position.set(3.5, BASE_Y + 3.5, 5.5);
