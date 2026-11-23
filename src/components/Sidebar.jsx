@@ -11,27 +11,28 @@ export default function Sidebar({
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity ${
+        className={`fixed inset-0 bg-black/60 backdrop-blur-xs z-40 transition-opacity ${
           isOpen ? 'block opacity-100' : 'hidden opacity-0'
         }`}
       />
 
       {/* Sidebar Drawer */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-80 bg-[#161B22] border-r border-[#30363D] shadow-2xl flex flex-col justify-between transform transition-transform duration-250 ease-out ${
+        className={`fixed inset-y-0 left-0 z-50 w-80 bg-white dark:bg-[#161B22] border-r border-[#D0D7DE] dark:border-[#30363D] shadow-2xl flex flex-col justify-between transform transition-transform duration-250 ease-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div>
           {/* Header */}
-          <div className="px-6 py-5 border-b border-[#30363D] flex items-center justify-between">
+          <div className="px-6 py-5 border-b border-[#D0D7DE] dark:border-[#30363D] flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-semibold text-white tracking-wide">BRIMON</h2>
-              <p className="text-xs text-[#8B949E] mt-0.5">TIM 25 — Akral Catura</p>
+              <h2 className="text-sm font-semibold text-[#1F2328] dark:text-white tracking-wide">BRIMON</h2>
+              <p className="text-xs text-[#656D76] dark:text-[#8B949E] mt-0.5">TIM 25 — Akral Catura</p>
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-md text-[#8B949E] hover:text-white hover:bg-[#21262D] transition"
+              aria-label="Close Sidebar"
+              className="p-1.5 rounded-md text-[#656D76] dark:text-[#8B949E] hover:text-[#1F2328] dark:hover:text-white hover:bg-[#F3F4F6] dark:hover:bg-[#21262D] transition"
             >
               <X className="w-4 h-4" />
             </button>
@@ -42,63 +43,63 @@ export default function Sidebar({
             <a
               href="#sectionOverview"
               onClick={onClose}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#F0F6FC] hover:bg-[#21262D] transition font-medium"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#1F2328] dark:text-[#F0F6FC] hover:bg-[#F3F4F6] dark:hover:bg-[#21262D] transition font-medium"
             >
-              <LayoutDashboard className="w-4 h-4 text-[#8B949E]" />
+              <LayoutDashboard className="w-4 h-4 text-[#656D76] dark:text-[#8B949E]" />
               <span>Dashboard Utama</span>
             </a>
             <a
               href="#sectionModel3D"
               onClick={onClose}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#C9D1D9] hover:text-white hover:bg-[#21262D] transition"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#24292F] dark:text-[#C9D1D9] hover:text-[#1F2328] dark:hover:text-white hover:bg-[#F3F4F6] dark:hover:bg-[#21262D] transition"
             >
-              <Box className="w-4 h-4 text-[#8B949E]" />
+              <Box className="w-4 h-4 text-[#656D76] dark:text-[#8B949E]" />
               <span>Model Struktur 3D</span>
             </a>
             <a
               href="#sectionCharts"
               onClick={onClose}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#C9D1D9] hover:text-white hover:bg-[#21262D] transition"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#24292F] dark:text-[#C9D1D9] hover:text-[#1F2328] dark:hover:text-white hover:bg-[#F3F4F6] dark:hover:bg-[#21262D] transition"
             >
-              <Activity className="w-4 h-4 text-[#8B949E]" />
+              <Activity className="w-4 h-4 text-[#656D76] dark:text-[#8B949E]" />
               <span>Grafik Getaran & FFT</span>
             </a>
             <a
               href="#sectionScenarios"
               onClick={onClose}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#C9D1D9] hover:text-white hover:bg-[#21262D] transition"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-[#24292F] dark:text-[#C9D1D9] hover:text-[#1F2328] dark:hover:text-white hover:bg-[#F3F4F6] dark:hover:bg-[#21262D] transition"
             >
-              <Sliders className="w-4 h-4 text-[#8B949E]" />
+              <Sliders className="w-4 h-4 text-[#656D76] dark:text-[#8B949E]" />
               <span>Skenario Pengujian</span>
             </a>
             <button
               onClick={() => { onClose(); onOpenModal('tech'); }}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[#C9D1D9] hover:text-white hover:bg-[#21262D] transition text-left"
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[#24292F] dark:text-[#C9D1D9] hover:text-[#1F2328] dark:hover:text-white hover:bg-[#F3F4F6] dark:hover:bg-[#21262D] transition text-left"
             >
-              <FileText className="w-4 h-4 text-[#8B949E]" />
+              <FileText className="w-4 h-4 text-[#656D76] dark:text-[#8B949E]" />
               <span>Spesifikasi Desain Jembatan</span>
             </button>
             <button
               onClick={() => { onClose(); onOpenModal('formula'); }}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[#C9D1D9] hover:text-white hover:bg-[#21262D] transition text-left"
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[#24292F] dark:text-[#C9D1D9] hover:text-[#1F2328] dark:hover:text-white hover:bg-[#F3F4F6] dark:hover:bg-[#21262D] transition text-left"
             >
-              <Calculator className="w-4 h-4 text-[#8B949E]" />
+              <Calculator className="w-4 h-4 text-[#656D76] dark:text-[#8B949E]" />
               <span>Metodologi Pt T-05-2002-B</span>
             </button>
             <button
               onClick={() => { onClose(); onOpenModal('logs'); }}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[#C9D1D9] hover:text-white hover:bg-[#21262D] transition text-left"
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[#24292F] dark:text-[#C9D1D9] hover:text-[#1F2328] dark:hover:text-white hover:bg-[#F3F4F6] dark:hover:bg-[#21262D] transition text-left"
             >
-              <History className="w-4 h-4 text-[#8B949E]" />
+              <History className="w-4 h-4 text-[#656D76] dark:text-[#8B949E]" />
               <span>Riwayat Telemetri & CSV</span>
             </button>
           </nav>
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-[#30363D] text-xs text-[#8B949E]">
+        <div className="p-6 border-t border-[#D0D7DE] dark:border-[#30363D] text-xs text-[#656D76] dark:text-[#8B949E]">
           <div>Innovative Bridge Design Competition 2027</div>
-          <div className="mt-1 text-[#484F58]">Through Tied Arch · Parker-Warren</div>
+          <div className="mt-1 text-[#8C959F] dark:text-[#484F58]">Through Tied Arch · Parker-Warren</div>
         </div>
       </aside>
     </>

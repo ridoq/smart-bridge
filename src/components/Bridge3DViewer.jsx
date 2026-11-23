@@ -413,50 +413,52 @@ export default function Bridge3DViewer({
   };
 
   return (
-    <section id="sectionModel3D" className="bg-[#161B22] border border-[#30363D] rounded-xl p-5 shadow-sm space-y-4">
+    <section id="sectionModel3D" className="bg-white dark:bg-[#161B22] border border-[#D0D7DE] dark:border-[#30363D] rounded-xl p-5 shadow-xs space-y-4 transition">
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div className="flex items-center gap-3">
-          <h2 className="text-sm font-semibold text-white">Visualisasi Struktur 3D</h2>
-          <span className="text-xs text-[#8B949E]">Through Tied Arch Parker-Warren</span>
+          <h2 className="text-sm font-semibold text-[#1F2328] dark:text-white">Visualisasi Struktur 3D</h2>
+          <span className="text-xs text-[#656D76] dark:text-[#8B949E]">Through Tied Arch Parker-Warren</span>
         </div>
 
         {/* Minimal Controls */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Camera Angles */}
-          <div className="bg-[#0D1117] border border-[#30363D] p-0.5 rounded-lg flex items-center text-xs">
+          <div className="bg-[#F6F8FA] dark:bg-[#0D1117] border border-[#D0D7DE] dark:border-[#30363D] p-0.5 rounded-lg flex items-center text-xs">
             <button
               onClick={() => setCameraView('proposal')}
-              className="px-2.5 py-1 rounded-md text-white hover:bg-[#21262D] transition"
+              className="px-2.5 py-1 rounded-md text-[#1F2328] dark:text-white hover:bg-white dark:hover:bg-[#21262D] transition"
             >
               3/4 Oblique
             </button>
             <button
               onClick={() => setCameraView('elevation')}
-              className="px-2.5 py-1 rounded-md text-[#8B949E] hover:text-white transition"
+              className="px-2.5 py-1 rounded-md text-[#656D76] dark:text-[#8B949E] hover:text-[#1F2328] dark:hover:text-white hover:bg-white dark:hover:bg-[#21262D] transition"
             >
               Elevasi
             </button>
             <button
               onClick={() => setCameraView('top')}
-              className="px-2.5 py-1 rounded-md text-[#8B949E] hover:text-white transition"
+              className="px-2.5 py-1 rounded-md text-[#656D76] dark:text-[#8B949E] hover:text-[#1F2328] dark:hover:text-white hover:bg-white dark:hover:bg-[#21262D] transition"
             >
               Atas
             </button>
             <button
               onClick={() => setCameraView('sensor')}
-              className="px-2.5 py-1 rounded-md text-[#8B949E] hover:text-white transition"
+              className="px-2.5 py-1 rounded-md text-[#656D76] dark:text-[#8B949E] hover:text-[#1F2328] dark:hover:text-white hover:bg-white dark:hover:bg-[#21262D] transition"
             >
               Sensor
             </button>
           </div>
 
           {/* Deflection Scale */}
-          <div className="bg-[#0D1117] border border-[#30363D] p-0.5 rounded-lg flex items-center text-xs">
-            <span className="text-[#8B949E] px-2 text-[11px]">Bending:</span>
+          <div className="bg-[#F6F8FA] dark:bg-[#0D1117] border border-[#D0D7DE] dark:border-[#30363D] p-0.5 rounded-lg flex items-center text-xs">
+            <span className="text-[#656D76] dark:text-[#8B949E] px-2 text-[11px]">Bending:</span>
             <button
               onClick={() => onSetDeformScale(1)}
               className={`px-2 py-0.5 rounded transition ${
-                deformScale === 1 ? 'bg-[#21262D] text-white font-medium' : 'text-[#8B949E] hover:text-white'
+                deformScale === 1
+                  ? 'bg-white dark:bg-[#21262D] text-[#1F2328] dark:text-white font-medium shadow-xs'
+                  : 'text-[#656D76] dark:text-[#8B949E] hover:text-[#1F2328] dark:hover:text-white'
               }`}
             >
               1x
@@ -464,7 +466,9 @@ export default function Bridge3DViewer({
             <button
               onClick={() => onSetDeformScale(5)}
               className={`px-2 py-0.5 rounded transition ${
-                deformScale === 5 ? 'bg-[#21262D] text-white font-medium' : 'text-[#8B949E] hover:text-white'
+                deformScale === 5
+                  ? 'bg-white dark:bg-[#21262D] text-[#1F2328] dark:text-white font-medium shadow-xs'
+                  : 'text-[#656D76] dark:text-[#8B949E] hover:text-[#1F2328] dark:hover:text-white'
               }`}
             >
               5x
@@ -476,13 +480,13 @@ export default function Bridge3DViewer({
       {/* 3D Canvas Mount Point */}
       <div
         ref={mountRef}
-        className="relative w-full h-[400px] sm:h-[440px] bg-[#0A0D13] rounded-lg border border-[#21262D] overflow-hidden cursor-grab active:cursor-grabbing"
+        className="relative w-full h-[400px] sm:h-[440px] bg-[#0A0D13] rounded-lg border border-[#D0D7DE] dark:border-[#21262D] overflow-hidden cursor-grab active:cursor-grabbing"
       >
-        <div className="absolute bottom-3 left-3 bg-[#161B22]/90 border border-[#30363D] px-3 py-1.5 rounded-lg text-xs text-[#C9D1D9] backdrop-blur-sm pointer-events-none">
-          Status: <span className="text-white font-medium">{status} ({deflection.toFixed(2)} mm)</span>
+        <div className="absolute bottom-3 left-3 bg-white/90 dark:bg-[#161B22]/90 border border-[#D0D7DE] dark:border-[#30363D] px-3 py-1.5 rounded-lg text-xs text-[#1F2328] dark:text-[#C9D1D9] backdrop-blur-sm pointer-events-none shadow-xs">
+          Status: <span className="text-[#1F2328] dark:text-white font-medium">{status} ({deflection.toFixed(2)} mm)</span>
         </div>
 
-        <div className="absolute bottom-3 right-3 text-[11px] text-[#6E7681] pointer-events-none hidden sm:block">
+        <div className="absolute bottom-3 right-3 text-[11px] text-[#8C959F] dark:text-[#6E7681] pointer-events-none hidden sm:block">
           Drag untuk rotasi · Scroll untuk zoom
         </div>
       </div>
