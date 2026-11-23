@@ -6,7 +6,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 const SPAN_L = 50.0;
 const DECK_W = 7.2;
 const TRUSS_H = 9.2;
-const STAND_H = 8.2;
+const STAND_H = 7.2;
 const BASE_Y = STAND_H; // Height where bridge rests on the trestle stands
 
 function Bridge3DViewerComponent({
@@ -20,13 +20,11 @@ function Bridge3DViewerComponent({
   const controlsRef = useRef(null);
 
   // Dynamic references for deflection updates
-  const dynamicNodesRef = useRef([]);
   const dynamicMembersRef = useRef([]);
   const dynamicPlatesRef = useRef([]);
   const floorBeamsRef = useRef([]);
   const deckMeshRef = useRef(null);
   const origDeckGeoRef = useRef(null);
-  const truckRef = useRef(null);
   const sensorRef = useRef(null);
 
   const currentDefRef = useRef(deflection);
@@ -47,40 +45,40 @@ function Bridge3DViewerComponent({
     const width = container.clientWidth;
     const height = container.clientHeight;
 
-    // 1. Scene with Sunset Golden Hour Background
+    // 1. Scene with Rich Sunset Sky
     const scene = new THREE.Scene();
 
-    // Create realistic sunset sky gradient texture
+    // Create realistic sunset sky gradient matching Image 1 & 2
     const skyCanvas = document.createElement('canvas');
-    skyCanvas.width = 512;
+    skyCanvas.width = 1024;
     skyCanvas.height = 512;
     const ctx = skyCanvas.getContext('2d');
     const grad = ctx.createLinearGradient(0, 0, 0, 512);
-    grad.addColorStop(0.0, '#4a6d8c'); // Twilight blue top
-    grad.addColorStop(0.35, '#847fa5'); // Soft lavender
-    grad.addColorStop(0.65, '#cb837b'); // Sunset rose
-    grad.addColorStop(0.85, '#f5a676'); // Warm golden peach
-    grad.addColorStop(1.0, '#ffcb9a'); // Golden horizon glow
+    grad.addColorStop(0.0, '#537d99'); // Twilight blue top
+    grad.addColorStop(0.3, '#7e9ab1'); // Soft blue
+    grad.addColorStop(0.55, '#c5959c'); // Sunset lavender-rose
+    grad.addColorStop(0.75, '#ea9f82'); // Golden peach
+    grad.addColorStop(0.92, '#f8b98a'); // Warm golden horizon
+    grad.addColorStop(1.0, '#ffd8a6'); // Sunset glow
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 512, 512);
+    ctx.fillRect(0, 0, 1024, 512);
 
-    // Wispy subtle sunset clouds
-    ctx.fillStyle = 'rgba(255, 235, 220, 0.12)';
-    for (let i = 0; i < 18; i++) {
+    // Realistic Wispy Cirrocumulus Sunset Clouds
+    ctx.fillStyle = 'rgba(255, 240, 230, 0.18)';
+    for (let i = 0; i < 30; i++) {
       ctx.beginPath();
-      const cx = (i * 35) % 512;
-      const cy = 100 + (i * 19) % 220;
-      ctx.ellipse(cx, cy, 60 + (i % 4) * 25, 6 + (i % 3) * 4, -0.05, 0, Math.PI * 2);
+      const cx = (i * 37) % 1024;
+      const cy = 40 + (i * 23) % 280;
+      ctx.ellipse(cx, cy, 70 + (i % 5) * 30, 5 + (i % 3) * 5, -0.04, 0, Math.PI * 2);
       ctx.fill();
     }
 
     const skyTexture = new THREE.CanvasTexture(skyCanvas);
     scene.background = skyTexture;
-    scene.fog = new THREE.FogExp2(0xf5a676, 0.0035);
 
-    // 2. Camera (3/4 Perspective Default matching Image 2)
-    const camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 1000);
-    camera.position.set(32, 17, 34);
+    // 2. Camera (Perspective with low FOV for photographic depth)
+    const camera = new THREE.PerspectiveCamera(34, width / height, 0.1, 1000);
+    camera.position.set(34, BASE_Y + 7.0, 42);
     cameraRef.current = camera;
 
     // 3. Renderer with Optimized Settings
@@ -94,111 +92,111 @@ function Bridge3DViewerComponent({
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.08;
+    renderer.toneMappingExposure = 1.05;
     container.appendChild(renderer.domElement);
 
     // 4. OrbitControls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.06;
-    controls.maxPolarAngle = Math.PI / 2 - 0.02; // Prevent going below floor
+    controls.maxPolarAngle = Math.PI / 2 - 0.02; // Floor boundary
     controls.minDistance = 6;
-    controls.maxDistance = 150;
-    controls.target.set(0, BASE_Y + 3.0, 0);
+    controls.maxDistance = 160;
+    controls.target.set(0, BASE_Y + 3.2, 0);
     controlsRef.current = controls;
 
     // 5. Lighting (Sunset Golden Hour)
-    const hemiLight = new THREE.HemisphereLight(0xffdfcb, 0x1f262e, 0.85);
+    const hemiLight = new THREE.HemisphereLight(0xffdfcb, 0x14181f, 0.9);
     scene.add(hemiLight);
 
-    const sunLight = new THREE.DirectionalLight(0xffe1b5, 1.6);
-    sunLight.position.set(-28, 38, 26);
+    const sunLight = new THREE.DirectionalLight(0xffdfb3, 1.7);
+    sunLight.position.set(-32, 34, 28);
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 1024;
     sunLight.shadow.mapSize.height = 1024;
     sunLight.shadow.bias = -0.0003;
     scene.add(sunLight);
 
-    const sunsetFill = new THREE.DirectionalLight(0xf29d79, 0.6);
-    sunsetFill.position.set(35, 18, -25);
+    const sunsetFill = new THREE.DirectionalLight(0xe59779, 0.55);
+    sunsetFill.position.set(35, 16, -25);
     scene.add(sunsetFill);
 
-    // 6. Ground Studio Floor
-    const floorGeo = new THREE.PlaneGeometry(260, 260);
+    // 6. Ground Studio Floor (Pure Dark Matte as in Image 1 & 2)
+    const floorGeo = new THREE.PlaneGeometry(280, 280);
     const floorMat = new THREE.MeshStandardMaterial({
-      color: 0x101317,
-      roughness: 0.75,
-      metalness: 0.2
+      color: 0x0c0e12,
+      roughness: 0.85,
+      metalness: 0.15
     });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // 7. Reusable Materials (Red Truss, Yellow Gusset Plates, Black Bolts, Dark Steel Stands)
+    // 7. Materials matching Exact Civil Render
     const trussMat = new THREE.MeshStandardMaterial({
-      color: 0xd63d27, // Vibrant Civil Red-Orange
-      roughness: 0.38,
+      color: 0xd63d27, // Vibrant Red-Orange
+      roughness: 0.36,
       metalness: 0.45
     });
 
     const gussetMat = new THREE.MeshStandardMaterial({
-      color: 0xf5ba13, // Golden Yellow Gusset Plate
-      roughness: 0.32,
+      color: 0xf5ba13, // Golden Yellow Plates
+      roughness: 0.3,
       metalness: 0.4
     });
 
     const boltMat = new THREE.MeshStandardMaterial({
-      color: 0x181a1b, // Black Rivet / Bolt Head
-      roughness: 0.2,
+      color: 0x16181a, // Black Rivet / Bolt Heads
+      roughness: 0.25,
       metalness: 0.85
     });
 
     const standMat = new THREE.MeshStandardMaterial({
-      color: 0x222528, // Dark Charcoal Steel Frame
-      roughness: 0.55,
-      metalness: 0.6
+      color: 0x23201d, // Dark Bronze Charcoal Steel
+      roughness: 0.6,
+      metalness: 0.55
     });
 
     const padMat = new THREE.MeshStandardMaterial({
-      color: 0x935541, // Bronze/Copper Bearing Plate
+      color: 0x8a4e3b, // Copper/Bronze Bearing Plate
       roughness: 0.45,
       metalness: 0.5
     });
 
     const deckMat = new THREE.MeshStandardMaterial({
-      color: 0x1f2328, // Dark Asphalt / Steel Running Surface
-      roughness: 0.75,
-      metalness: 0.3
+      color: 0xc0392b, // Reddish Roadway / Running Deck
+      roughness: 0.6,
+      metalness: 0.35
     });
 
-    // 8. Build Trestle Support Stands (Trapezoidal Open Steel Stands in Images)
+    // 8. Build Trestle Support Stands (Trapezoidal 4-Leg Steel Stands in Images)
     const buildTrestleStand = (posX) => {
       const standGroup = new THREE.Group();
       standGroup.position.set(posX, 0, 0);
 
-      const topW = 9.5;
-      const topD = 9.0;
-      const botW = 13.5;
-      const botD = 12.0;
-      const legR = 0.38;
+      const topW = 9.0;
+      const topD = 8.5;
+      const botW = 12.5;
+      const botD = 11.0;
+      const legR = 0.36;
 
       // Top Platform Plate
       const topPlate = new THREE.Mesh(
-        new THREE.BoxGeometry(topW, 0.45, topD),
+        new THREE.BoxGeometry(topW, 0.4, topD),
         standMat
       );
-      topPlate.position.set(0, STAND_H - 0.22, 0);
+      topPlate.position.set(0, STAND_H - 0.2, 0);
       topPlate.castShadow = true;
       topPlate.receiveShadow = true;
       standGroup.add(topPlate);
 
-      // Bearing Pad on Top
+      // Bearing Surface Pad on Top
       const pad = new THREE.Mesh(
-        new THREE.BoxGeometry(topW * 0.75, 0.25, DECK_W + 0.8),
+        new THREE.BoxGeometry(topW * 0.75, 0.22, DECK_W + 0.6),
         padMat
       );
-      pad.position.set(0, STAND_H + 0.12, 0);
+      pad.position.set(0, STAND_H + 0.11, 0);
       pad.castShadow = true;
       pad.receiveShadow = true;
       standGroup.add(pad);
@@ -230,7 +228,7 @@ function Bridge3DViewerComponent({
         addTubularStrut(topPt, botPt, legR, standMat);
       });
 
-      // Bottom Rectangular Tubular Base Frame
+      // Bottom Rectangular Tubular Base Frame on the Floor
       const bPts = [
         new THREE.Vector3(-botW / 2, 0.2, -botD / 2),
         new THREE.Vector3(botW / 2, 0.2, -botD / 2),
@@ -248,7 +246,7 @@ function Bridge3DViewerComponent({
     buildTrestleStand(SPAN_L / 2);
 
     // 9. Exact Topology of Parker-Warren Truss (100% Matching Uploaded Images)
-    // Primary Nodes (Left Half normalized to Span, Mirrored to Right Half)
+    // Primary Nodes with Flat Apex Crest
     const rawNodes = [
       // Bottom Chord
       { id: 'B0', x: -25.0, y: 0.0 },
@@ -261,16 +259,17 @@ function Bridge3DViewerComponent({
       { id: 'B1_r', x: 19.9, y: 0.0 },
       { id: 'B0_r', x: 25.0, y: 0.0 },
 
-      // Top Arch Chord (Faceted Polygon Bowstring)
+      // Top Arch Chord (Parker Truss with Horizontal Apex Flat)
       { id: 'T1', x: -19.9, y: 3.7 },
       { id: 'T2', x: -13.5, y: 6.5 },
       { id: 'T3', x: -4.4, y: 8.8 },
-      { id: 'T_mid', x: 0.0, y: 9.2 },
+      { id: 'T_mid_L', x: -2.1, y: 9.2 },
+      { id: 'T_mid_R', x: 2.1, y: 9.2 },
       { id: 'T3_r', x: 4.4, y: 8.8 },
       { id: 'T2_r', x: 13.5, y: 6.5 },
       { id: 'T1_r', x: 19.9, y: 3.7 },
 
-      // Sub-Panel & Intersection Gusset Plates (Subdivided Parker Truss)
+      // Subdivided Panels & Intersections
       { id: 'M1', x: -15.5, y: 1.8 },
       { id: 'M2', x: -8.0, y: 3.8 },
       { id: 'M3', x: -4.4, y: 6.3 },
@@ -286,15 +285,16 @@ function Bridge3DViewerComponent({
       ['B0', 'B1'], ['B1', 'B2'], ['B2', 'B3'], ['B3', 'B_mid'],
       ['B_mid', 'B3_r'], ['B3_r', 'B2_r'], ['B2_r', 'B1_r'], ['B1_r', 'B0_r'],
 
-      // Top Chords
-      ['B0', 'T1'], ['T1', 'T2'], ['T2', 'T3'], ['T3', 'T_mid'],
-      ['T_mid', 'T3_r'], ['T3_r', 'T2_r'], ['T2_r', 'T1_r'], ['T1_r', 'B0_r'],
+      // Top Chords with Flat Crest
+      ['B0', 'T1'], ['T1', 'T2'], ['T2', 'T3'], ['T3', 'T_mid_L'],
+      ['T_mid_L', 'T_mid_R'],
+      ['T_mid_R', 'T3_r'], ['T3_r', 'T2_r'], ['T2_r', 'T1_r'], ['T1_r', 'B0_r'],
 
       // Verticals
       ['B1', 'T1'], ['B1_r', 'T1_r'],
       ['B3', 'M3'], ['M3', 'T3'],
       ['B3_r', 'M3_r'], ['M3_r', 'T3_r'],
-      ['M_mid', 'T_mid'],
+      ['M_mid', 'T_mid_L'], ['M_mid', 'T_mid_R'],
 
       // Diagonals with Sub-panel Bracing
       // Bay 1: X-Brace
@@ -318,7 +318,6 @@ function Bridge3DViewerComponent({
       ['B2_r', 'M1_r'], ['M1_r', 'T1_r']
     ];
 
-    // Helper to instantiate a 3D box truss member
     const unitBoxGeo = new THREE.BoxGeometry(1, 1, 1);
     const createTrussBeam = (n1, n2, z, width = 0.32, depth = 0.38) => {
       const mesh = new THREE.Mesh(unitBoxGeo, trussMat);
@@ -328,15 +327,14 @@ function Bridge3DViewerComponent({
       return { mesh, n1, n2, z, width, depth };
     };
 
-    // Shared Bolt Geometry (Hex/Cylinder)
-    const unitBoltGeo = new THREE.CylinderGeometry(0.065, 0.065, 0.14, 6);
+    const unitBoltGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.14, 6);
 
-    // Helper to create realistic Yellow Gusset Plate with Black Bolts
+    // Gusset Plate with Distinct Bolts
     const createGussetPlate = (nodeId, x, y, z, plateSize = 0.95) => {
       const plateGroup = new THREE.Group();
       plateGroup.position.set(x, BASE_Y + y, z);
 
-      // Yellow Octagonal / Chamfered Plate
+      // Yellow Plate
       const plateMesh = new THREE.Mesh(
         new THREE.BoxGeometry(plateSize, plateSize * 0.85, 0.44),
         gussetMat
@@ -344,7 +342,7 @@ function Bridge3DViewerComponent({
       plateMesh.castShadow = true;
       plateGroup.add(plateMesh);
 
-      // Cluster of 4 to 6 Black Bolts
+      // Cluster of Black Bolts
       const boltOffsets = [
         [-plateSize * 0.3, -plateSize * 0.25],
         [plateSize * 0.3, -plateSize * 0.25],
@@ -354,13 +352,11 @@ function Bridge3DViewerComponent({
       ];
 
       boltOffsets.forEach(([bx, by]) => {
-        // Front bolt
         const boltF = new THREE.Mesh(unitBoltGeo, boltMat);
         boltF.rotation.x = Math.PI / 2;
         boltF.position.set(bx, by, 0.24);
         plateGroup.add(boltF);
 
-        // Back bolt
         const boltB = new THREE.Mesh(unitBoltGeo, boltMat);
         boltB.rotation.x = Math.PI / 2;
         boltB.position.set(bx, by, -0.24);
@@ -376,18 +372,16 @@ function Bridge3DViewerComponent({
     const platesList = [];
 
     [-DECK_W / 2, DECK_W / 2].forEach(zPos => {
-      // Create Gusset Plates for each node
       rawNodes.forEach(n => {
-        let pSize = 0.85;
+        let pSize = 0.9;
         if (n.id.startsWith('B0')) pSize = 1.35; // Shoe plates
-        else if (n.id === 'M_mid' || n.id.startsWith('T3') || n.id === 'T_mid') pSize = 1.1;
-        else if (n.id.startsWith('M1') || n.id.startsWith('M2')) pSize = 0.65; // Intersection plates
+        else if (n.id === 'M_mid' || n.id.startsWith('T3') || n.id.startsWith('T_mid')) pSize = 1.1;
+        else if (n.id.startsWith('M1') || n.id.startsWith('M2')) pSize = 0.68; // Intersection plates
 
         const plate = createGussetPlate(n.id, n.x, n.y, zPos, pSize);
         platesList.push(plate);
       });
 
-      // Create Red Truss Members
       trussEdges.forEach(([id1, id2]) => {
         const isChord = id1.startsWith('B') && id2.startsWith('B');
         const isArch = id1.startsWith('T') && id2.startsWith('T');
@@ -400,7 +394,7 @@ function Bridge3DViewerComponent({
     dynamicMembersRef.current = membersList;
     dynamicPlatesRef.current = platesList;
 
-    // 10. Transverse Floor Beams (Cross Girders under Deck at Bottom Joints)
+    // 10. Transverse Floor Beams (Cross Girders under Deck)
     const bottomJoints = rawNodes.filter(n => n.id.startsWith('B'));
     const floorBeams = [];
 
@@ -444,7 +438,7 @@ function Bridge3DViewerComponent({
     });
 
     // 12. Overhead Lateral Wind Struts connecting Left & Right Arches
-    const topJoints = ['T1', 'T2', 'T3', 'T_mid', 'T3_r', 'T2_r', 'T1_r'];
+    const topJoints = ['T1', 'T2', 'T3', 'T_mid_L', 'T_mid_R', 'T3_r', 'T2_r', 'T1_r'];
     topJoints.forEach(tjId => {
       const node = rawNodes.find(n => n.id === tjId);
       if (node) {
@@ -475,37 +469,6 @@ function Bridge3DViewerComponent({
     led.position.set(0, 0.2, 0);
     sensor.add(led);
 
-    // 14. Testing Load Rig / Truck
-    const truck = new THREE.Group();
-    const truckBody = new THREE.Mesh(
-      new THREE.BoxGeometry(3.8, 1.4, 2.0),
-      new THREE.MeshStandardMaterial({ color: 0x2f81f7, roughness: 0.3 })
-    );
-    truckBody.position.y = 1.1;
-    truckBody.castShadow = true;
-    truck.add(truckBody);
-
-    const cab = new THREE.Mesh(
-      new THREE.BoxGeometry(1.5, 1.25, 1.9),
-      new THREE.MeshStandardMaterial({ color: 0x2f81f7, roughness: 0.3 })
-    );
-    cab.position.set(1.8, 1.3, 0);
-    truck.add(cab);
-
-    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0d1117, roughness: 0.9 });
-    [-1.2, 0.5, 2.0].forEach(wx => {
-      [-1.05, 1.05].forEach(wz => {
-        const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.48, 0.35, 10), wheelMat);
-        wheel.rotation.z = Math.PI / 2;
-        wheel.position.set(wx, 0.48, wz);
-        truck.add(wheel);
-      });
-    });
-
-    truck.position.set(0, BASE_Y + 0.45, 1.2);
-    scene.add(truck);
-    truckRef.current = truck;
-
     // Window Resize Handler
     const handleResize = () => {
       if (!container) return;
@@ -522,13 +485,11 @@ function Bridge3DViewerComponent({
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
-    // 15. Animation Loop with Real-Time Deflection Bending (Zero-Allocation Performance)
+    // 14. Animation Loop with Real-Time Deflection Bending (Zero-Allocation Performance)
     let animId;
-    let truckPos = 0;
     let lastComputedDef = -999;
     let lastComputedScale = -999;
 
-    // Helper map of node coordinates
     const nodeCoords = {};
     rawNodes.forEach(n => {
       nodeCoords[n.id] = { x: n.x, y: n.y };
@@ -550,7 +511,6 @@ function Bridge3DViewerComponent({
 
       // Update structural bending ONLY when deflection or scale changes
       if (Math.abs(curDef - lastComputedDef) > 0.005 || curScale !== lastComputedScale) {
-        // Compute sagging for each node: sag(x) = (def / 10.0) * (scale * 0.4) * cos(pi * x / span)
         const nodeSag = {};
         rawNodes.forEach(n => {
           const normSpan = (n.x + SPAN_L / 2) / SPAN_L; // 0 to 1
@@ -609,16 +569,6 @@ function Bridge3DViewerComponent({
         lastComputedScale = curScale;
       }
 
-      // Truck Patrol Movement
-      if (truckRef.current) {
-        truckPos += 0.08;
-        if (truckPos > SPAN_L / 2 - 2) truckPos = -SPAN_L / 2 + 2;
-        truckRef.current.position.x = truckPos;
-        const norm = (truckPos + SPAN_L / 2) / SPAN_L;
-        const sag = (curDef / 10.0) * (curScale * 0.38) * Math.sin(Math.PI * norm);
-        truckRef.current.position.y = BASE_Y + 0.45 - sag;
-      }
-
       // Sensor Beacon Pulse
       if (sensorRef.current) {
         const s = 1 + 0.08 * Math.sin(Date.now() * 0.006);
@@ -637,7 +587,6 @@ function Bridge3DViewerComponent({
       window.removeEventListener('resize', handleResize);
       document.removeEventListener('visibilitychange', handleVisibility);
 
-      // Cleanly dispose Three.js geometries, textures, materials to avoid leaks
       skyTexture.dispose();
       unitBoxGeo.dispose();
       unitBoltGeo.dispose();
@@ -664,23 +613,23 @@ function Bridge3DViewerComponent({
     };
   }, []);
 
-  // Preset Camera Angles
+  // Preset Camera Angles (Tailored to Match Image 1 & 2 Perfectly)
   const setCameraView = (view) => {
     if (!cameraRef.current || !controlsRef.current) return;
     const cam = cameraRef.current;
     const ctrl = controlsRef.current;
 
     if (view === 'proposal') {
-      // 3/4 Perspective Angle (Image 2)
-      cam.position.set(30, 16, 32);
-      ctrl.target.set(0, BASE_Y + 3.0, 0);
+      // 3/4 Perspective Angle (Exact Match with Image 2)
+      cam.position.set(34, BASE_Y + 7.5, 40);
+      ctrl.target.set(-1.5, BASE_Y + 3.0, 0);
     } else if (view === 'elevation') {
-      // Exact Orthographic Side View (Image 1)
-      cam.position.set(0, BASE_Y + 3.0, 48);
-      ctrl.target.set(0, BASE_Y + 3.0, 0);
+      // Side View (Exact Match with Image 1)
+      cam.position.set(0, BASE_Y + 3.8, 62);
+      ctrl.target.set(0, BASE_Y + 3.8, 0);
     } else if (view === 'top') {
       // Bird's Eye Top View
-      cam.position.set(0, BASE_Y + 45, 0.1);
+      cam.position.set(0, BASE_Y + 50, 0.1);
       ctrl.target.set(0, BASE_Y + 2.0, 0);
     } else if (view === 'sensor') {
       // Close up on IoT Sensor Module
@@ -705,14 +654,14 @@ function Bridge3DViewerComponent({
             <button
               onClick={() => setCameraView('proposal')}
               className="px-2.5 py-1 rounded-md text-[#1F2328] dark:text-white hover:bg-white dark:hover:bg-[#21262D] transition"
-              title="Sudut Perspektif 3/4 Proposal"
+              title="Sudut Perspektif 3/4 Proposal Sesuai Gambar 2"
             >
               3/4 Oblique
             </button>
             <button
               onClick={() => setCameraView('elevation')}
               className="px-2.5 py-1 rounded-md text-[#656D76] dark:text-[#8B949E] hover:text-[#1F2328] dark:hover:text-white hover:bg-white dark:hover:bg-[#21262D] transition"
-              title="Elevasi Samping Sesuai Gambar 1"
+              title="Elevasi Samping Murni Sesuai Gambar 1"
             >
               Elevasi
             </button>
