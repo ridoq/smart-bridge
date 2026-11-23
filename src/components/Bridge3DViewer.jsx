@@ -2,12 +2,14 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-// Physical Bridge Dimensions (Matching ITB Civil Model & Render Images 100%)
+// Physical Bridge Dimensions (100% GAMTEK IBDC 2027 Scale & Ratio)
+// Bentang L = 100% (50.0), Tinggi Maks H = 25% (12.5), Lebar W = 12% (6.0), Tebal Batang t = 1.5% (0.75)
 const SPAN_L = 50.0;
-const DECK_W = 7.2;
-const TRUSS_H = 9.2;
+const DECK_W = 6.0;   // 12% L (GAMTEK Table: Lebar W = 12%)
+const TRUSS_H = 12.5; // 25% L (GAMTEK Table: Tinggi Maks H = 25%)
+const BEAM_T = 0.75;  // 1.5% L (GAMTEK Table: Tebal Batang t = 1.5% L)
 const STAND_H = 7.2;
-const BASE_Y = STAND_H; // Height where bridge rests on the trestle stands
+const BASE_Y = STAND_H; // Height where bridge rests on the abutments
 
 function Bridge3DViewerComponent({
   deflection,
@@ -86,7 +88,7 @@ function Bridge3DViewerComponent({
 
     // 2. Camera (Perspective with low FOV for photographic depth)
     const camera = new THREE.PerspectiveCamera(34, width / height, 0.1, 1000);
-    camera.position.set(38, BASE_Y + 8.5, 46);
+    camera.position.set(38, BASE_Y + 10.0, 44);
     cameraRef.current = camera;
 
     // 3. Renderer with Optimized Settings (Shadow Map Disabled for Maximum Clarity & Performance)
@@ -109,7 +111,7 @@ function Bridge3DViewerComponent({
     controls.maxPolarAngle = Math.PI / 2 - 0.01; // Can't dip below horizon
     controls.minDistance = 5;
     controls.maxDistance = 220;
-    controls.target.set(0, BASE_Y + 2.5, 0);
+    controls.target.set(0, BASE_Y + 3.5, 0);
     controlsRef.current = controls;
 
     // 5. Lighting (Clean, Warm, Shadowless Architectural Illumination)
@@ -420,104 +422,99 @@ function Bridge3DViewerComponent({
       metalness: 0.35
     });
 
-    // 8. Exact Topology of Parker-Warren Truss (100% Matching Tim Sipil Civil Render)
+    // 8. Exact Topology of Parker-Warren Truss (100% Matching GAMTEK Drawing & Table)
+    // 7 Panels (14.3% L), 8 Bottom Nodes (B0-B7), 7 Top Nodes (A0-A6)
     // EXACTLY 2 Vertical Posts on Left Side & 2 Vertical Posts on Right Side
     const rawNodes = [
-      // Bottom Chord (Continuous span with joints under vertical posts and diagonal intersections)
-      { id: 'B0', x: -25.0, y: 0.0 },       // Left shoe gusset plate
-      { id: 'B1', x: -19.2, y: 0.0 },       // Base of Post 1 Left
-      { id: 'B2', x: -9.5, y: 0.0 },        // Intermediate bottom chord joint (V-diagonals)
-      { id: 'B3', x: -4.5, y: 0.0 },        // Base of Post 2 Left
-      { id: 'B3_r', x: 4.5, y: 0.0 },       // Base of Post 2 Right
-      { id: 'B2_r', x: 9.5, y: 0.0 },       // Intermediate bottom chord joint right
-      { id: 'B1_r', x: 19.2, y: 0.0 },      // Base of Post 1 Right
-      { id: 'B0_r', x: 25.0, y: 0.0 },      // Right shoe gusset plate
+      // Bottom Chords (8 nodes: B0 to B7)
+      { id: 'B0', x: -25.0, y: 0.0 },       // Left shoe joint (0.0% L)
+      { id: 'B1', x: -19.2, y: 0.0 },       // Base of Vertical Post 1 Left (14.3% L)
+      { id: 'B2', x: -10.5, y: 0.0 },       // Bottom Warren joint Left (28.6% L)
+      { id: 'B3', x: -4.3, y: 0.0 },        // Base of Vertical Post 2 Left (42.9% L)
+      { id: 'B4', x: 4.3, y: 0.0 },         // Base of Vertical Post 2 Right (57.1% L)
+      { id: 'B5', x: 10.5, y: 0.0 },        // Bottom Warren joint Right (71.4% L)
+      { id: 'B6', x: 19.2, y: 0.0 },        // Base of Vertical Post 1 Right (85.7% L)
+      { id: 'B7', x: 25.0, y: 0.0 },        // Right shoe joint (100.0% L)
 
-      // Top Arch Chord
-      { id: 'T1', x: -19.2, y: 3.9 },       // Top of Post 1 Left (short vertical post)
-      { id: 'T2', x: -13.2, y: 6.6 },       // Intermediate top chord joint
-      { id: 'T3', x: -4.5, y: 8.9 },        // Top of Post 2 Left (tall vertical post)
-      { id: 'T_apex', x: 0.0, y: 9.3 },     // Top apex / crown of arch
-      { id: 'T3_r', x: 4.5, y: 8.9 },       // Top of Post 2 Right (tall vertical post)
-      { id: 'T2_r', x: 13.2, y: 6.6 },      // Intermediate top chord joint right
-      { id: 'T1_r', x: 19.2, y: 3.9 },      // Top of Post 1 Right (short vertical post)
-
-      // Subdivided Bracing & Intermediate Intersection Plates
-      { id: 'M1', x: -16.0, y: 2.2 },       // K-brace intersection plate Bay 1
-      { id: 'P2_mid', x: -4.5, y: 6.5 },    // Mid-height bracket on Post 2 Left
-      { id: 'M_center', x: 0.0, y: 6.5 },   // Center chevron cross-tie intersection
-      { id: 'P2_mid_r', x: 4.5, y: 6.5 },   // Mid-height bracket on Post 2 Right
-      { id: 'M1_r', x: 16.0, y: 2.2 }       // K-brace intersection plate Bay 1 Right
+      // Top Arch Chords (7 nodes: A0 to A6, Max Height H = 25% L = 12.5)
+      { id: 'A0', x: -19.2, y: 4.8 },       // Top of Vertical Post 1 Left (above B1)
+      { id: 'A1', x: -13.5, y: 8.5 },       // Intermediate Top Arch Joint Left
+      { id: 'A2', x: -4.3, y: 11.8 },       // Top of Vertical Post 2 Left (above B3)
+      { id: 'A3', x: 0.0, y: 12.5 },        // Arch Apex / Crown at Mid-Span (H = 25% L)
+      { id: 'A4', x: 4.3, y: 11.8 },        // Top of Vertical Post 2 Right (above B4)
+      { id: 'A5', x: 13.5, y: 8.5 },        // Intermediate Top Arch Joint Right
+      { id: 'A6', x: 19.2, y: 4.8 }         // Top of Vertical Post 1 Right (above B6)
     ];
 
-    // Connectivity List for Truss Members
+    // Connectivity List for Truss Members (100% Matching GAMTEK Drawing)
     const trussEdges = [
-      // Bottom Chords
-      ['B0', 'B1'], ['B1', 'B2'], ['B2', 'B3'], ['B3', 'B3_r'],
-      ['B3_r', 'B2_r'], ['B2_r', 'B1_r'], ['B1_r', 'B0_r'],
+      // Top Arch Chords (8 members)
+      ['B0', 'A0'], ['A0', 'A1'], ['A1', 'A2'], ['A2', 'A3'],
+      ['A3', 'A4'], ['A4', 'A5'], ['A5', 'A6'], ['A6', 'B7'],
 
-      // Top Chords
-      ['B0', 'T1'], ['T1', 'T2'], ['T2', 'T3'], ['T3', 'T_apex'],
-      ['T_apex', 'T3_r'], ['T3_r', 'T2_r'], ['T2_r', 'T1_r'], ['T1_r', 'B0_r'],
+      // Bottom Chords (7 members)
+      ['B0', 'B1'], ['B1', 'B2'], ['B2', 'B3'], ['B3', 'B4'],
+      ['B4', 'B5'], ['B5', 'B6'], ['B6', 'B7'],
 
-      // Vertical Posts (EXACTLY 2 on Left Side, 2 on Right Side)
-      ['B1', 'T1'],         // Post 1 Left
-      ['B3', 'T3'],         // Post 2 Left
-      ['B3_r', 'T3_r'],     // Post 2 Right
-      ['B1_r', 'T1_r'],     // Post 1 Right
+      // Vertical Posts (EXACTLY 2 on Left Side & 2 on Right Side = 4 posts total)
+      ['B1', 'A0'],         // Post 1 Left
+      ['B3', 'A2'],         // Post 2 Left
+      ['B4', 'A4'],         // Post 2 Right
+      ['B6', 'A6'],         // Post 1 Right
 
-      // Left Diagonals
-      ['T1', 'M1'], ['B1', 'M1'], ['M1', 'T2'], ['M1', 'B2'],
-      ['T2', 'B2'], ['T2', 'B3'], ['B2', 'T3'],
-
-      // Right Diagonals
-      ['T1_r', 'M1_r'], ['B1_r', 'M1_r'], ['M1_r', 'T2_r'], ['M1_r', 'B2_r'],
-      ['T2_r', 'B2_r'], ['T2_r', 'B3_r'], ['B2_r', 'T3_r'],
-
-      // Center Bay (Chevron / Inverted V + Horizontal Cross-Tie)
-      ['B3', 'T_apex'], ['B3_r', 'T_apex'],
-      ['P2_mid', 'M_center'], ['M_center', 'P2_mid_r']
+      // Web Diagonals (8 members)
+      ['B1', 'A1'],         // Diagonal Bay 2: Up-Right
+      ['A1', 'B2'],         // Diagonal Bay 2: Down-Right
+      ['B2', 'A2'],         // Diagonal Bay 3: Up-Right
+      ['B3', 'A3'],         // Center Bay: Left Inverted Chevron to Apex
+      ['B4', 'A3'],         // Center Bay: Right Inverted Chevron to Apex
+      ['A4', 'B5'],         // Diagonal Bay 5: Down-Right
+      ['B5', 'A5'],         // Diagonal Bay 6: Up-Right
+      ['A5', 'B6']          // Diagonal Bay 6: Down-Right
     ];
 
     const unitBoxGeo = new THREE.BoxGeometry(1, 1, 1);
-    const createTrussBeam = (n1, n2, z, width = 0.32, depth = 0.38) => {
+    const createTrussBeam = (n1, n2, z, width = 0.38, depth = 0.48) => {
       const mesh = new THREE.Mesh(unitBoxGeo, trussMat);
       scene.add(mesh);
       return { mesh, n1, n2, z, width, depth };
     };
 
-    const unitBoltGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.14, 6);
+    const unitBoltGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.16, 6);
 
-    // Gusset Plate with Distinct Bolts
-    const createGussetPlate = (nodeId, x, y, z, plateSize = 0.95) => {
+    // Gusset Plate with Distinct Bolts (Matching GAMTEK Detail Sambungan)
+    const createGussetPlate = (nodeId, x, y, z, plateW = 1.35, plateH = 1.15) => {
       const plateGroup = new THREE.Group();
       plateGroup.position.set(x, BASE_Y + y, z);
 
       // Yellow Plate
       const plateMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(plateSize, plateSize * 0.85, 0.44),
+        new THREE.BoxGeometry(plateW, plateH, 0.48),
         gussetMat
       );
       plateGroup.add(plateMesh);
 
-      // Cluster of Black Bolts
+      // Cluster of 8 Black Bolts matching Detail Sambungan (Gusset Plate Detail)
       const boltOffsets = [
-        [-plateSize * 0.3, -plateSize * 0.25],
-        [plateSize * 0.3, -plateSize * 0.25],
-        [-plateSize * 0.3, plateSize * 0.25],
-        [plateSize * 0.3, plateSize * 0.25],
-        [0, 0]
+        [-plateW * 0.32, -plateH * 0.28],
+        [plateW * 0.32, -plateH * 0.28],
+        [-plateW * 0.32, plateH * 0.28],
+        [plateW * 0.32, plateH * 0.28],
+        [-plateW * 0.12, 0],
+        [plateW * 0.12, 0],
+        [0, plateH * 0.30],
+        [0, -plateH * 0.30]
       ];
 
       boltOffsets.forEach(([bx, by]) => {
         const boltF = new THREE.Mesh(unitBoltGeo, boltMat);
         boltF.rotation.x = Math.PI / 2;
-        boltF.position.set(bx, by, 0.24);
+        boltF.position.set(bx, by, 0.26);
         plateGroup.add(boltF);
 
         const boltB = new THREE.Mesh(unitBoltGeo, boltMat);
         boltB.rotation.x = Math.PI / 2;
-        boltB.position.set(bx, by, -0.24);
+        boltB.position.set(bx, by, -0.26);
         plateGroup.add(boltB);
       });
 
@@ -531,20 +528,29 @@ function Bridge3DViewerComponent({
 
     [-DECK_W / 2, DECK_W / 2].forEach(zPos => {
       rawNodes.forEach(n => {
-        let pSize = 0.95;
-        if (n.id.startsWith('B0')) pSize = 1.35; // End shoe plates
-        else if (n.id.startsWith('T3') || n.id.startsWith('B3') || n.id === 'T_apex') pSize = 1.15;
-        else if (n.id.startsWith('M1') || n.id.startsWith('P2') || n.id === 'M_center') pSize = 0.72; // Sub-panel plates
+        let pW = 1.35, pH = 1.15;
+        if (n.id === 'B0' || n.id === 'B7') {
+          pW = 1.65; pH = 1.25; // End shoe plates sitting on bearings
+        } else if (n.id === 'A3') {
+          pW = 1.55; pH = 1.25; // Crown apex plate uniting top chords and chevrons
+        } else if (n.id === 'B3' || n.id === 'B4' || n.id === 'A2' || n.id === 'A4') {
+          pW = 1.45; pH = 1.20; // Heavy junction plates at tall posts
+        } else if (n.id === 'B1' || n.id === 'B6' || n.id === 'A0' || n.id === 'A6') {
+          pW = 1.35; pH = 1.15; // Outer post plates
+        } else {
+          pW = 1.20; pH = 1.05; // Intermediate web joints
+        }
 
-        const plate = createGussetPlate(n.id, n.x, n.y, zPos, pSize);
+        const plate = createGussetPlate(n.id, n.x, n.y, zPos, pW, pH);
         platesList.push(plate);
       });
 
       trussEdges.forEach(([id1, id2]) => {
         const isChord = id1.startsWith('B') && id2.startsWith('B');
-        const isArch = id1.startsWith('T') && id2.startsWith('T');
-        const w = (isChord || isArch) ? 0.36 : 0.26;
-        const d = (isChord || isArch) ? 0.42 : 0.32;
+        const isArch = (id1.startsWith('A') && id2.startsWith('A')) || (id1 === 'B0' && id2 === 'A0') || (id1 === 'A6' && id2 === 'B7');
+        const isPost = (id1 === 'B1' && id2 === 'A0') || (id1 === 'B3' && id2 === 'A2') || (id1 === 'B4' && id2 === 'A4') || (id1 === 'B6' && id2 === 'A6');
+        const w = (isChord || isArch) ? 0.44 : (isPost ? 0.38 : 0.34);
+        const d = (isChord || isArch) ? 0.58 : (isPost ? 0.48 : 0.40);
         membersList.push(createTrussBeam(id1, id2, zPos, w, d));
       });
     });
@@ -552,19 +558,34 @@ function Bridge3DViewerComponent({
     dynamicMembersRef.current = membersList;
     dynamicPlatesRef.current = platesList;
 
-    // 10. Transverse Floor Beams (Cross Girders under Deck)
+    // 10. Transverse Floor Beams (Cross Girders under Deck: B0 to B7)
     const bottomJoints = rawNodes.filter(n => n.id.startsWith('B'));
     const floorBeams = [];
 
     bottomJoints.forEach(bj => {
       const fbMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(0.42, 0.55, DECK_W + 0.6),
+        new THREE.BoxGeometry(0.44, 0.58, DECK_W + 0.6),
         trussMat
       );
       scene.add(fbMesh);
       floorBeams.push({ mesh: fbMesh, x: bj.x });
     });
-    floorBeamsRef.current = floorBeams;
+
+    // 10b. Center Longitudinal Beam / Stringer between B3 and B4 at Z = 0 (GAMTEK: Z = 6% L)
+    const b3Node = rawNodes.find(n => n.id === 'B3');
+    const b4Node = rawNodes.find(n => n.id === 'B4');
+    const centerBeamLen = Math.abs(b4Node.x - b3Node.x);
+    const centerLongitudinalBeam = new THREE.Mesh(
+      new THREE.BoxGeometry(centerBeamLen, 0.44, 0.44),
+      trussMat
+    );
+    centerLongitudinalBeam.position.set(0, BASE_Y + 0.15, 0);
+    scene.add(centerLongitudinalBeam);
+
+    floorBeamsRef.current = {
+      transverse: floorBeams,
+      centerStringer: centerLongitudinalBeam
+    };
 
     // 11. Roadway Deck (Continuous Multi-Segment Mesh with Dynamic Deflection)
     const deckGeo = new THREE.BoxGeometry(SPAN_L, 0.35, DECK_W - 0.2, 40, 1, 2);
@@ -591,14 +612,14 @@ function Bridge3DViewerComponent({
       scene.add(curb);
     });
 
-    // 12. Overhead Lateral Wind Struts connecting Left & Right Arches
-    const topJoints = ['T1', 'T2', 'T3', 'T_apex', 'T3_r', 'T2_r', 'T1_r'];
+    // 12. Overhead Lateral Wind Struts (Palang Atas: 4 at A0, A2, A4, A6 matching GAMTEK)
+    const topJoints = ['A0', 'A2', 'A4', 'A6'];
     const overheadStruts = [];
     topJoints.forEach(tjId => {
       const node = rawNodes.find(n => n.id === tjId);
       if (node) {
         const strut = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.18, 0.18, DECK_W, 8),
+          new THREE.CylinderGeometry(0.20, 0.20, DECK_W, 8),
           trussMat
         );
         strut.rotation.x = Math.PI / 2;
@@ -709,7 +730,7 @@ function Bridge3DViewerComponent({
       regActGeo(new THREE.BoxGeometry(0.76, 0.52, DECK_W + 0.8)),
       reactionBeamMat
     );
-    reactionBeam.position.set(0, BASE_Y + 9.45, 0);
+    reactionBeam.position.set(0, BASE_Y + 12.75, 0);
     scene.add(reactionBeam);
 
     // Hazard yellow end caps on reaction beam
@@ -718,7 +739,7 @@ function Bridge3DViewerComponent({
         regActGeo(new THREE.BoxGeometry(0.78, 0.54, 0.15)),
         hazardYellowMat
       );
-      cap.position.set(0, BASE_Y + 9.45, zc);
+      cap.position.set(0, BASE_Y + 12.75, zc);
       scene.add(cap);
     });
 
@@ -731,7 +752,7 @@ function Bridge3DViewerComponent({
       regActGeo(new THREE.BoxGeometry(0.86, 0.65, 0.86)),
       actuatorBlueMat
     );
-    topManifold.position.set(0, 8.55, 0);
+    topManifold.position.set(0, 11.85, 0);
     fixedActuatorGroup.add(topManifold);
 
     // 4 Chrome Hex Nuts on top of Manifold Block
@@ -741,7 +762,7 @@ function Bridge3DViewerComponent({
       [-0.32, 0.32], [0.32, 0.32]
     ].forEach(([nx, nz]) => {
       const nut = new THREE.Mesh(nutGeo, chromeMat);
-      nut.position.set(nx, 8.92, nz);
+      nut.position.set(nx, 12.22, nz);
       fixedActuatorGroup.add(nut);
     });
 
@@ -749,7 +770,7 @@ function Bridge3DViewerComponent({
     const eyeRingGeo = regActGeo(new THREE.TorusGeometry(0.12, 0.035, 8, 16));
     [-0.44, 0.44].forEach(ez => {
       const ring = new THREE.Mesh(eyeRingGeo, silverRingMat);
-      ring.position.set(0, 8.55, ez);
+      ring.position.set(0, 11.85, ez);
       ring.rotation.y = Math.PI / 2;
       fixedActuatorGroup.add(ring);
     });
@@ -759,34 +780,34 @@ function Bridge3DViewerComponent({
       regActGeo(new THREE.BoxGeometry(0.18, 0.22, 0.24)),
       actuatorBlueMat
     );
-    topPort.position.set(0.48, 8.55, 0);
+    topPort.position.set(0.48, 11.85, 0);
     fixedActuatorGroup.add(topPort);
 
     const topPortFitting = new THREE.Mesh(
       regActGeo(new THREE.CylinderGeometry(0.065, 0.065, 0.18, 6)),
       chromeMat
     );
-    topPortFitting.position.set(0.58, 8.55, 0);
+    topPortFitting.position.set(0.58, 11.85, 0);
     topPortFitting.rotation.z = Math.PI / 2;
     fixedActuatorGroup.add(topPortFitting);
 
     // 2. Four Chrome Vertical Tie-Rods (Connecting Top & Bottom Manifold Blocks)
-    const tieRodGeo = regActGeo(new THREE.CylinderGeometry(0.038, 0.038, 2.3, 10));
+    const tieRodGeo = regActGeo(new THREE.CylinderGeometry(0.038, 0.038, 3.6, 10));
     [
       [-0.32, -0.32], [0.32, -0.32],
       [-0.32, 0.32], [0.32, 0.32]
     ].forEach(([rx, rz]) => {
       const rod = new THREE.Mesh(tieRodGeo, chromeMat);
-      rod.position.set(rx, 7.3, rz);
+      rod.position.set(rx, 9.75, rz);
       fixedActuatorGroup.add(rod);
     });
 
     // 3. Central Royal Blue Hydraulic Cylinder Barrel
     const cylBarrel = new THREE.Mesh(
-      regActGeo(new THREE.CylinderGeometry(0.36, 0.36, 2.2, 24)),
+      regActGeo(new THREE.CylinderGeometry(0.36, 0.36, 3.5, 24)),
       actuatorBlueMat
     );
-    cylBarrel.position.set(0, 7.3, 0);
+    cylBarrel.position.set(0, 9.75, 0);
     fixedActuatorGroup.add(cylBarrel);
 
     // 4. Lower Square Manifold Block
@@ -794,7 +815,7 @@ function Bridge3DViewerComponent({
       regActGeo(new THREE.BoxGeometry(0.86, 0.65, 0.86)),
       actuatorBlueMat
     );
-    botManifold.position.set(0, 6.05, 0);
+    botManifold.position.set(0, 7.65, 0);
     fixedActuatorGroup.add(botManifold);
 
     // 4 Chrome Hex Nuts under Bottom Manifold Block
@@ -803,14 +824,14 @@ function Bridge3DViewerComponent({
       [-0.32, 0.32], [0.32, 0.32]
     ].forEach(([nx, nz]) => {
       const nut = new THREE.Mesh(nutGeo, chromeMat);
-      nut.position.set(nx, 5.68, nz);
+      nut.position.set(nx, 7.28, nz);
       fixedActuatorGroup.add(nut);
     });
 
     // Silver Lifting Eyebolts on Lower Block Sides
     [-0.44, 0.44].forEach(ez => {
       const ring = new THREE.Mesh(eyeRingGeo, silverRingMat);
-      ring.position.set(0, 6.05, ez);
+      ring.position.set(0, 7.65, ez);
       ring.rotation.y = Math.PI / 2;
       fixedActuatorGroup.add(ring);
     });
@@ -820,14 +841,14 @@ function Bridge3DViewerComponent({
       regActGeo(new THREE.BoxGeometry(0.18, 0.22, 0.24)),
       actuatorBlueMat
     );
-    botPort.position.set(0.48, 6.05, 0);
+    botPort.position.set(0.48, 7.65, 0);
     fixedActuatorGroup.add(botPort);
 
     const botPortFitting = new THREE.Mesh(
       regActGeo(new THREE.CylinderGeometry(0.065, 0.065, 0.18, 6)),
       chromeMat
     );
-    botPortFitting.position.set(0.58, 6.05, 0);
+    botPortFitting.position.set(0.58, 7.65, 0);
     botPortFitting.rotation.z = Math.PI / 2;
     fixedActuatorGroup.add(botPortFitting);
 
@@ -836,7 +857,7 @@ function Bridge3DViewerComponent({
       regActGeo(new THREE.CylinderGeometry(0.30, 0.30, 0.85, 20)),
       actuatorBlueMat
     );
-    transducerBarrel.position.set(0, 5.4, 0);
+    transducerBarrel.position.set(0, 7.0, 0);
     fixedActuatorGroup.add(transducerBarrel);
 
     // LVDT Electrical Connector Socket
@@ -844,14 +865,14 @@ function Bridge3DViewerComponent({
       regActGeo(new THREE.BoxGeometry(0.14, 0.16, 0.14)),
       transducerPortMat
     );
-    lvdtPort.position.set(0.33, 5.4, 0);
+    lvdtPort.position.set(0.33, 7.0, 0);
     fixedActuatorGroup.add(lvdtPort);
 
     const lvdtPins = new THREE.Mesh(
       regActGeo(new THREE.CylinderGeometry(0.05, 0.05, 0.06, 12)),
       chromeMat
     );
-    lvdtPins.position.set(0.41, 5.4, 0);
+    lvdtPins.position.set(0.41, 7.0, 0);
     lvdtPins.rotation.z = Math.PI / 2;
     fixedActuatorGroup.add(lvdtPins);
 
@@ -860,17 +881,17 @@ function Bridge3DViewerComponent({
       regActGeo(new THREE.CylinderGeometry(0.34, 0.34, 0.14, 20)),
       darkSteelMat
     );
-    glandSeal.position.set(0, 4.95, 0);
+    glandSeal.position.set(0, 6.55, 0);
     fixedActuatorGroup.add(glandSeal);
 
     // High-Pressure Flexible Hydraulic Hoses
     [-0.1, 0.1].forEach(zh => {
       const hose = new THREE.Mesh(
-        regActGeo(new THREE.CylinderGeometry(0.04, 0.04, 1.8, 8)),
+        regActGeo(new THREE.CylinderGeometry(0.04, 0.04, 2.4, 8)),
         rubberPadMat
       );
-      hose.position.set(0.68, 7.5, zh);
-      hose.rotation.z = -0.15;
+      hose.position.set(0.68, 9.75, zh);
+      hose.rotation.z = -0.12;
       fixedActuatorGroup.add(hose);
     });
 
@@ -879,8 +900,8 @@ function Bridge3DViewerComponent({
     // C. Dynamic Chrome Piston Rod (Polished Chrome Ram extending downward)
     const unitPistonGeo = regActGeo(new THREE.CylinderGeometry(0.22, 0.22, 1.0, 18));
     const pistonMesh = new THREE.Mesh(unitPistonGeo, chromeMat);
-    pistonMesh.position.set(0, BASE_Y + 3.1, 0);
-    pistonMesh.scale.set(1, 4.0, 1);
+    pistonMesh.position.set(0, BASE_Y + 3.85, 0);
+    pistonMesh.scale.set(1, 5.35, 1);
     scene.add(pistonMesh);
 
     // D. Heavy Cast Swivel Clevis Base Group (Tumpuan Sendi Knuckle Base)
@@ -956,15 +977,17 @@ function Bridge3DViewerComponent({
     scene.add(swivelBaseGroup);
 
     // E. Spreader Beam / Load Distribution Plate on Bridge Deck
+    const spreaderW = DECK_W * 0.85;
     const spreaderMesh = new THREE.Mesh(
-      regActGeo(new THREE.BoxGeometry(0.70, 0.28, 5.2)),
+      regActGeo(new THREE.BoxGeometry(0.70, 0.28, spreaderW)),
       spreaderBeamMat
     );
     spreaderMesh.position.set(0, BASE_Y + 0.49, 0);
     scene.add(spreaderMesh);
 
     // Hazard yellow caps on spreader ends
-    [-2.6, 2.6].forEach(ze => {
+    const halfSpreaderZ = spreaderW / 2;
+    [-halfSpreaderZ, halfSpreaderZ].forEach(ze => {
       const cap = new THREE.Mesh(
         regActGeo(new THREE.BoxGeometry(0.72, 0.30, 0.14)),
         hazardYellowMat
@@ -1048,7 +1071,7 @@ function Bridge3DViewerComponent({
     }));
     const actuatorSprite = new THREE.Sprite(spriteMat);
     actuatorSprite.scale.set(6.2, 1.9, 1.0);
-    actuatorSprite.position.set(0, BASE_Y + 9.8, 0);
+    actuatorSprite.position.set(0, BASE_Y + 14.5, 0);
     scene.add(actuatorSprite);
 
     // Save actuator references
@@ -1140,12 +1163,21 @@ function Bridge3DViewerComponent({
           m.mesh.quaternion.setFromUnitVectors(up, dir);
         });
 
-        // 3. Update Floor Beams
-        floorBeamsRef.current.forEach(fb => {
-          const normSpan = (fb.x + SPAN_L / 2) / SPAN_L;
-          const sag = (curDef / 10.0) * (curScale * 0.38) * Math.sin(Math.PI * normSpan);
-          fb.mesh.position.set(fb.x, BASE_Y + 0.15 - sag, 0);
-        });
+        // 3. Update Floor Beams & Center Stringer
+        if (floorBeamsRef.current) {
+          const { transverse, centerStringer } = floorBeamsRef.current;
+          if (transverse) {
+            transverse.forEach(fb => {
+              const normSpan = (fb.x + SPAN_L / 2) / SPAN_L;
+              const sag = (curDef / 10.0) * (curScale * 0.38) * Math.sin(Math.PI * normSpan);
+              fb.mesh.position.set(fb.x, BASE_Y + 0.15 - sag, 0);
+            });
+          }
+          if (centerStringer) {
+            const midSag = (curDef / 10.0) * (curScale * 0.38);
+            centerStringer.position.set(0, BASE_Y + 0.15 - midSag, 0);
+          }
+        }
 
         // 3b. Update Overhead Lateral Struts (Truss Top Chord Deflection)
         overheadStrutsRef.current.forEach(st => {
@@ -1179,14 +1211,14 @@ function Bridge3DViewerComponent({
             act.swivelBase.position.y = BASE_Y + 0.65 - midSag;
           }
           if (act.piston) {
-            const topY = BASE_Y + 4.95;
+            const topY = BASE_Y + 6.55;
             const botY = BASE_Y + 1.20 - midSag;
             const pDist = Math.max(0.1, topY - botY);
             act.piston.scale.set(1, pDist, 1);
             act.piston.position.y = (topY + botY) / 2;
           }
           if (act.forceArrow) {
-            act.forceArrow.position.y = BASE_Y + 2.4 - midSag;
+            act.forceArrow.position.y = BASE_Y + 3.2 - midSag;
           }
         }
 
@@ -1288,20 +1320,20 @@ function Bridge3DViewerComponent({
 
     if (view === 'proposal') {
       // 3/4 Perspective Angle (Showing full bridge spanning between the two landmasses)
-      cam.position.set(38, BASE_Y + 8.5, 46);
-      ctrl.target.set(0, BASE_Y + 2.5, 0);
+      cam.position.set(38, BASE_Y + 10.0, 44);
+      ctrl.target.set(0, BASE_Y + 3.5, 0);
     } else if (view === 'elevation') {
       // Side Elevation (Profile showing arch spanning gorge between cliffs)
-      cam.position.set(0, BASE_Y + 4.0, 76);
-      ctrl.target.set(0, BASE_Y + 4.0, 0);
+      cam.position.set(0, BASE_Y + 6.0, 80);
+      ctrl.target.set(0, BASE_Y + 6.0, 0);
     } else if (view === 'actuator') {
       // Close-Up View directly on Mid-Span Hydraulic Actuator
-      cam.position.set(7.5, BASE_Y + 5.2, 9.2);
-      ctrl.target.set(0, BASE_Y + 3.2, 0);
+      cam.position.set(8.5, BASE_Y + 7.5, 9.5);
+      ctrl.target.set(0, BASE_Y + 5.5, 0);
     } else if (view === 'top') {
       // Bird's Eye Top View
-      cam.position.set(0, BASE_Y + 65, 0.1);
-      ctrl.target.set(0, BASE_Y + 1.0, 0);
+      cam.position.set(0, BASE_Y + 70, 0.1);
+      ctrl.target.set(0, BASE_Y + 2.0, 0);
     } else if (view === 'sensor') {
       // Close up on IoT Sensor Module
       cam.position.set(3.5, BASE_Y + 3.5, 5.5);
@@ -1315,7 +1347,7 @@ function Bridge3DViewerComponent({
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div className="flex items-center gap-3">
           <h2 className="text-sm font-semibold text-[#1F2328] dark:text-white">Visualisasi Struktur 3D</h2>
-          <span className="text-xs text-[#656D76] dark:text-[#8B949E]">Through Tied Arch Parker-Warren (Uji Beban Aktuator Tengah Bentang)</span>
+          <span className="text-xs text-[#656D76] dark:text-[#8B949E]">Through Tied Arch Parker-Warren (Skala & Rasio GAMTEK 100%)</span>
         </div>
 
         {/* Minimal Controls */}
