@@ -46,28 +46,9 @@ export default function Header({
 
         {/* Right: Clean Controls & Toggles */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Scope Switcher */}
-          <div className="bg-[#F6F8FA] dark:bg-[#161B22] border border-[#D0D7DE] dark:border-[#30363D] p-0.5 rounded-lg flex items-center text-xs">
-            <button
-              onClick={() => onSetScope('lab')}
-              className={`px-3 py-1 rounded-md font-medium transition ${
-                scope === 'lab'
-                  ? 'bg-white dark:bg-[#21262D] text-[#1F2328] dark:text-white shadow-xs'
-                  : 'text-[#656D76] dark:text-[#8B949E] hover:text-[#1F2328] dark:hover:text-white'
-              }`}
-            >
-              Maket 2.5m
-            </button>
-            <button
-              onClick={() => onSetScope('real')}
-              className={`px-3 py-1 rounded-md font-medium transition ${
-                scope === 'real'
-                  ? 'bg-white dark:bg-[#21262D] text-[#1F2328] dark:text-white shadow-xs'
-                  : 'text-[#656D76] dark:text-[#8B949E] hover:text-[#1F2328] dark:hover:text-white'
-              }`}
-            >
-              Jembatan 120m
-            </button>
+          {/* Model Info (Simple non-button indicator) */}
+          <div className="bg-[#F6F8FA] dark:bg-[#161B22] border border-[#D0D7DE] dark:border-[#30363D] px-2.5 py-1 rounded-md text-xs font-medium text-[#1F2328] dark:text-[#E6EDF3] select-none">
+            Maket 2.5m
           </div>
 
           {/* Mode Switcher */}
