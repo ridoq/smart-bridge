@@ -29,6 +29,8 @@ function Bridge3DViewerComponent({
   const overheadStrutsRef = useRef([]);
   const deckMeshRef = useRef(null);
   const origDeckGeoRef = useRef(null);
+  const curbsRef = useRef([]);
+  const dashesRef = useRef([]);
   const sensorRef = useRef(null);
   const actuatorRefs = useRef(null);
 
@@ -108,7 +110,7 @@ function Bridge3DViewerComponent({
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.06;
-    controls.maxPolarAngle = Math.PI / 2 - 0.01; // Can't dip below horizon
+    controls.maxPolarAngle = Math.PI - 0.05; // Full 360 vertical orbit (allows looking from underneath the bridge)
     controls.minDistance = 5;
     controls.maxDistance = 220;
     controls.target.set(0, BASE_Y + 3.5, 0);
@@ -132,6 +134,11 @@ function Bridge3DViewerComponent({
     const frontFill = new THREE.DirectionalLight(0xffffff, 0.35);
     frontFill.position.set(0, 18, 45);
     scene.add(frontFill);
+
+    // Upward fill light for crystal-clear underside inspection
+    const underFill = new THREE.DirectionalLight(0xe8f0fe, 0.65);
+    underFill.position.set(0, -10, 15);
+    scene.add(underFill);
 
     // 6. Natural Land Terrain & River Environment (Daratan & Sungai)
     const envGeometries = [];
@@ -595,22 +602,29 @@ function Bridge3DViewerComponent({
     deckMeshRef.current = deckMesh;
     origDeckGeoRef.current = deckGeo.attributes.position.clone();
 
-    // Roadway Markings
+    // Roadway Markings (Stored in ref for dynamic bending with deck)
     const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    const dashesList = [];
     for (let lx = -SPAN_L / 2 + 2; lx < SPAN_L / 2 - 2; lx += 4) {
       const dash = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.16), lineMat);
       dash.rotation.x = -Math.PI / 2;
       dash.position.set(lx, BASE_Y + 0.54, 0);
       scene.add(dash);
+      dashesList.push({ mesh: dash, origX: lx });
     }
+    dashesRef.current = dashesList;
 
-    // Curbs along the deck
+    // Curbs along the deck (Segmented with 40 segments to bend smoothly in lockstep with the deck)
     const curbMat = new THREE.MeshStandardMaterial({ color: 0xb03a2e, roughness: 0.5, metalness: 0.3 });
+    const curbsList = [];
     [-DECK_W / 2 + 0.15, DECK_W / 2 - 0.15].forEach(cz => {
-      const curb = new THREE.Mesh(new THREE.BoxGeometry(SPAN_L, 0.45, 0.3), curbMat);
+      const curbGeo = new THREE.BoxGeometry(SPAN_L, 0.45, 0.3, 40, 1, 1);
+      const curb = new THREE.Mesh(curbGeo, curbMat);
       curb.position.set(0, BASE_Y + 0.6, cz);
       scene.add(curb);
+      curbsList.push({ mesh: curb, origGeo: curbGeo.attributes.position.clone() });
     });
+    curbsRef.current = curbsList;
 
     // 12. Overhead Lateral Wind Struts (Palang Atas: 4 at A0, A2, A4, A6 matching GAMTEK)
     const topJoints = ['A0', 'A2', 'A4', 'A6'];
@@ -630,21 +644,54 @@ function Bridge3DViewerComponent({
     });
     overheadStrutsRef.current = overheadStruts;
 
-    // 13. Mid-Span IoT Sensor Module (MPU6050 + ESP32 Box on Bottom Chord)
+    // 13. Mid-Span IoT Sensor Module (MPU6050 + ESP32 Underneath Bridge at X = 0)
     const sensorMat = new THREE.MeshStandardMaterial({
-      color: 0x2f81f7,
-      emissive: 0x1f6feb,
-      roughness: 0.2,
-      metalness: 0.8
+      color: 0x1d4ed8, // Industrial Blue Anodized Aluminum
+      emissive: 0x1e3a8a,
+      emissiveIntensity: 0.3,
+      roughness: 0.22,
+      metalness: 0.82
     });
-    const sensor = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.35, 0.5), sensorMat);
-    sensor.position.set(0, BASE_Y + 0.5, -DECK_W / 2 + 0.7);
-    scene.add(sensor);
-    sensorRef.current = sensor;
+    const sensorBracketMat = new THREE.MeshStandardMaterial({
+      color: 0x334155, // Steel Mounting Bracket
+      roughness: 0.45,
+      metalness: 0.75
+    });
 
-    const led = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 10), new THREE.MeshBasicMaterial({ color: 0x3fb950 }));
-    led.position.set(0, 0.2, 0);
-    sensor.add(led);
+    const sensorGroup = new THREE.Group();
+    sensorGroup.position.set(0, BASE_Y - 0.25, 0); // Mounted underneath the center stringer & floor beam
+
+    // Main sensor enclosure
+    const sensorBox = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.32, 0.6), sensorMat);
+    sensorGroup.add(sensorBox);
+
+    // Flange mounting brackets
+    const bracket1 = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.08, 0.45), sensorBracketMat);
+    bracket1.position.y = 0.16;
+    sensorGroup.add(bracket1);
+
+    // Status LED indicator on bottom face pointing down
+    const sensorLed = new THREE.Mesh(
+      new THREE.SphereGeometry(0.085, 12, 12),
+      new THREE.MeshBasicMaterial({ color: 0x10b981 })
+    );
+    sensorLed.position.set(0, -0.18, 0);
+    sensorGroup.add(sensorLed);
+
+    // 4 Corner Mounting Hex Bolts
+    const boltMiniGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.06, 6);
+    const boltMiniMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.9, roughness: 0.2 });
+    [
+      [-0.44, -0.18], [0.44, -0.18],
+      [-0.44, 0.18], [0.44, 0.18]
+    ].forEach(([bx, bz]) => {
+      const b = new THREE.Mesh(boltMiniGeo, boltMiniMat);
+      b.position.set(bx, 0.20, bz);
+      sensorGroup.add(b);
+    });
+
+    scene.add(sensorGroup);
+    sensorRef.current = sensorGroup;
 
     // 14. Mid-Span Industrial Servo-Hydraulic Actuator Assembly (100% Matching Uploaded Photo)
     // Features: Royal Blue Body, 4 Chrome Vertical Tie-Rods, Square Manifold Blocks,
@@ -747,12 +794,12 @@ function Bridge3DViewerComponent({
     const fixedActuatorGroup = new THREE.Group();
     fixedActuatorGroup.position.set(0, BASE_Y, 0);
 
-    // 1. Top Square Manifold Block
+    // 1. Top Square Manifold Block (Mounted flush underneath reaction beam)
     const topManifold = new THREE.Mesh(
       regActGeo(new THREE.BoxGeometry(0.86, 0.65, 0.86)),
       actuatorBlueMat
     );
-    topManifold.position.set(0, 11.85, 0);
+    topManifold.position.set(0, 12.16, 0);
     fixedActuatorGroup.add(topManifold);
 
     // 4 Chrome Hex Nuts on top of Manifold Block
@@ -907,7 +954,7 @@ function Bridge3DViewerComponent({
     // D. Heavy Cast Swivel Clevis Base Group (Tumpuan Sendi Knuckle Base)
     // Moves dynamically with bridge deck deflection
     const swivelBaseGroup = new THREE.Group();
-    swivelBaseGroup.position.set(0, BASE_Y + 0.65, 0);
+    swivelBaseGroup.position.set(0, BASE_Y + 0.55, 0);
 
     // 1. Upper Rod End Knuckle / Clevis Eye (Mounted to bottom of piston rod)
     const upperKnuckle = new THREE.Mesh(
@@ -976,25 +1023,61 @@ function Bridge3DViewerComponent({
 
     scene.add(swivelBaseGroup);
 
-    // E. Spreader Beam / Load Distribution Plate on Bridge Deck
-    const spreaderW = DECK_W * 0.85;
-    const spreaderMesh = new THREE.Mesh(
-      regActGeo(new THREE.BoxGeometry(0.70, 0.28, spreaderW)),
+    // E. Heavy Steel Load Distribution Plate on Bridge Deck (Covering Bay B3 to B4)
+    // Span along X from B3 (-4.3) to B4 (+4.3): Length = 8.4 units
+    // Width along Z fitting cleanly between curbs: Width = 5.2 units
+    const plateLenX = 8.4;
+    const plateWidthZ = DECK_W - 0.7; // ~5.3 units
+    const plateGroup = new THREE.Group();
+    plateGroup.position.set(0, BASE_Y + 0.44, 0);
+
+    // Main heavy steel distribution slab
+    const plateMesh = new THREE.Mesh(
+      regActGeo(new THREE.BoxGeometry(plateLenX, 0.22, plateWidthZ)),
       spreaderBeamMat
     );
-    spreaderMesh.position.set(0, BASE_Y + 0.49, 0);
-    scene.add(spreaderMesh);
+    plateGroup.add(plateMesh);
 
-    // Hazard yellow caps on spreader ends
-    const halfSpreaderZ = spreaderW / 2;
-    [-halfSpreaderZ, halfSpreaderZ].forEach(ze => {
-      const cap = new THREE.Mesh(
-        regActGeo(new THREE.BoxGeometry(0.72, 0.30, 0.14)),
+    // Longitudinal & Transverse Stiffener Ribs on plate top
+    [-plateWidthZ / 3, plateWidthZ / 3].forEach(rz => {
+      const rib = new THREE.Mesh(
+        regActGeo(new THREE.BoxGeometry(plateLenX * 0.95, 0.14, 0.12)),
+        spreaderBeamMat
+      );
+      rib.position.set(0, 0.15, rz);
+      plateGroup.add(rib);
+    });
+
+    [-plateLenX * 0.3, plateLenX * 0.3].forEach(rx => {
+      const ribX = new THREE.Mesh(
+        regActGeo(new THREE.BoxGeometry(0.14, 0.14, plateWidthZ * 0.92)),
+        spreaderBeamMat
+      );
+      ribX.position.set(rx, 0.15, 0);
+      plateGroup.add(ribX);
+    });
+
+    // Hazard yellow safety perimeter borders on B3 and B4 ends
+    [-plateLenX / 2, plateLenX / 2].forEach(px => {
+      const endBorder = new THREE.Mesh(
+        regActGeo(new THREE.BoxGeometry(0.18, 0.24, plateWidthZ)),
         hazardYellowMat
       );
-      cap.position.set(0, 0, ze);
-      spreaderMesh.add(cap);
+      endBorder.position.set(px, 0, 0);
+      plateGroup.add(endBorder);
     });
+
+    // Hazard yellow borders on side edges along curbs
+    [-plateWidthZ / 2, plateWidthZ / 2].forEach(pz => {
+      const sideBorder = new THREE.Mesh(
+        regActGeo(new THREE.BoxGeometry(plateLenX, 0.24, 0.16)),
+        hazardYellowMat
+      );
+      sideBorder.position.set(0, 0, pz);
+      plateGroup.add(sideBorder);
+    });
+
+    scene.add(plateGroup);
 
     // F. Downward Dynamic Force Vector Arrow
     const forceArrowGroup = new THREE.Group();
@@ -1076,10 +1159,12 @@ function Bridge3DViewerComponent({
 
     // Save actuator references
     actuatorRefs.current = {
+      reactionBeam,
+      fixedActuatorGroup,
       piston: pistonMesh,
       swivelBase: swivelBaseGroup,
       loadCellLedMat,
-      spreader: spreaderMesh,
+      spreader: plateGroup,
       forceArrow: forceArrowGroup,
       forceArrowMat,
       sprite: actuatorSprite,
@@ -1200,19 +1285,66 @@ function Bridge3DViewerComponent({
           deckMeshRef.current.geometry.computeVertexNormals();
         }
 
-        // 5. Update Mid-Span Hydraulic Actuator Piston Stroke & Deflection Tracking
+        // 4b. Update Curbs Deformation Vertices (Bends in 100% lockstep with roadway deck)
+        if (curbsRef.current) {
+          curbsRef.current.forEach(({ mesh, origGeo }) => {
+            const pos = mesh.geometry.attributes.position;
+            for (let i = 0; i < pos.count; i++) {
+              const ox = origGeo.getX(i);
+              const oy = origGeo.getY(i);
+              const normSpan = (ox + SPAN_L / 2) / SPAN_L;
+              const sag = (curDef / 10.0) * (curScale * 0.38) * Math.sin(Math.PI * normSpan);
+              pos.setY(i, oy - sag);
+            }
+            pos.needsUpdate = true;
+            mesh.geometry.computeVertexNormals();
+          });
+        }
+
+        // 4c. Update Roadway White Dashes Position (Stays glued to sagging road surface)
+        if (dashesRef.current) {
+          dashesRef.current.forEach(({ mesh, origX }) => {
+            const normSpan = (origX + SPAN_L / 2) / SPAN_L;
+            const sag = (curDef / 10.0) * (curScale * 0.38) * Math.sin(Math.PI * normSpan);
+            mesh.position.y = BASE_Y + 0.54 - sag;
+          });
+        }
+
+        // 4d. Update IoT Sensor Position (Mounted underneath bridge, sags with floor beam)
+        if (sensorRef.current) {
+          const midSag = (curDef / 10.0) * (curScale * 0.38);
+          sensorRef.current.position.y = BASE_Y - 0.25 - midSag;
+        }
+
+        // 5. Update Mid-Span Hydraulic Actuator Piston Stroke & Deflection Tracking (Zero-Floating Fix)
         if (actuatorRefs.current) {
-          const midSag = (curDef / 10.0) * (curScale * 0.38); // Mid-span deflection sag
+          const midSag = (curDef / 10.0) * (curScale * 0.38); // Mid-span deck deflection sag
+          const apexSag = nodeSag['A3'] || midSag;            // Arch crown apex deflection sag
           const act = actuatorRefs.current;
+
+          // Reaction beam & upper actuator descend with the arch crown apex so they NEVER float
+          if (act.reactionBeam) {
+            act.reactionBeam.position.y = BASE_Y + 12.75 - apexSag;
+          }
+          if (act.fixedActuatorGroup) {
+            act.fixedActuatorGroup.position.y = BASE_Y - apexSag;
+          }
+          if (act.sprite) {
+            act.sprite.position.y = BASE_Y + 14.5 - apexSag;
+          }
+
+          // Distribution plate (B3 to B4) & swivel knuckle base descend with the roadway deck
           if (act.spreader) {
-            act.spreader.position.y = BASE_Y + 0.49 - midSag;
+            act.spreader.position.y = BASE_Y + 0.44 - midSag;
           }
           if (act.swivelBase) {
-            act.swivelBase.position.y = BASE_Y + 0.65 - midSag;
+            act.swivelBase.position.y = BASE_Y + 0.55 - midSag;
           }
+
+          // Piston rod stroke smoothly bridges the descending cylinder body and the descending plate
           if (act.piston) {
-            const topY = BASE_Y + 6.55;
-            const botY = BASE_Y + 1.20 - midSag;
+            const topY = (BASE_Y - apexSag) + 6.55; // Bottom of gland seal
+            const botY = (BASE_Y - midSag) + 1.10;  // Top of swivel knuckle base on distribution plate
             const pDist = Math.max(0.1, topY - botY);
             act.piston.scale.set(1, pDist, 1);
             act.piston.position.y = (topY + botY) / 2;
@@ -1297,6 +1429,10 @@ function Bridge3DViewerComponent({
       envGeometries.forEach(g => g.dispose());
       envMaterials.forEach(m => m.dispose());
 
+      // Dispose dynamic curbs & dashes
+      curbsRef.current.forEach(({ mesh }) => mesh.geometry.dispose());
+      dashesRef.current.forEach(({ mesh }) => mesh.geometry.dispose());
+
       // Dispose all actuator geometries, materials & texture
       actGeometries.forEach(g => g.dispose());
       actMaterials.forEach(m => m.dispose());
@@ -1335,9 +1471,9 @@ function Bridge3DViewerComponent({
       cam.position.set(0, BASE_Y + 70, 0.1);
       ctrl.target.set(0, BASE_Y + 2.0, 0);
     } else if (view === 'sensor') {
-      // Close up on IoT Sensor Module
-      cam.position.set(3.5, BASE_Y + 3.5, 5.5);
-      ctrl.target.set(0, BASE_Y + 0.8, -DECK_W / 2 + 0.7);
+      // Close up on IoT Sensor Module underneath the bridge (looking up from below)
+      cam.position.set(0, BASE_Y - 3.8, 6.8);
+      ctrl.target.set(0, BASE_Y - 0.25, 0);
     }
     ctrl.update();
   };
@@ -1385,9 +1521,9 @@ function Bridge3DViewerComponent({
             <button
               onClick={() => setCameraView('sensor')}
               className="px-2.5 py-1 rounded-md text-[#656D76] dark:text-[#8B949E] hover:text-[#1F2328] dark:hover:text-white hover:bg-white dark:hover:bg-[#21262D] transition"
-              title="Fokus Sensor IoT MPU6050"
+              title="Lihat Bagian Bawah Jembatan & Sensor IoT MPU6050"
             >
-              Sensor
+              Bawah (Sensor)
             </button>
           </div>
 
