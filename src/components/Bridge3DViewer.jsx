@@ -419,77 +419,63 @@ function Bridge3DViewerComponent({
       metalness: 0.35
     });
 
-    // 8. Exact Topology of Parker-Warren Truss (100% Matching Uploaded Images)
-    // Primary Nodes with Flat Apex Crest
+    // 8. Exact Topology of Parker-Warren Truss (100% Matching Tim Sipil Civil Render)
+    // EXACTLY 2 Vertical Posts on Left Side & 2 Vertical Posts on Right Side
     const rawNodes = [
-      // Bottom Chord
-      { id: 'B0', x: -25.0, y: 0.0 },
-      { id: 'B1', x: -19.9, y: 0.0 },
-      { id: 'B2', x: -9.9, y: 0.0 },
-      { id: 'B3', x: -4.4, y: 0.0 },
-      { id: 'B_mid', x: 0.0, y: 0.0 },
-      { id: 'B3_r', x: 4.4, y: 0.0 },
-      { id: 'B2_r', x: 9.9, y: 0.0 },
-      { id: 'B1_r', x: 19.9, y: 0.0 },
-      { id: 'B0_r', x: 25.0, y: 0.0 },
+      // Bottom Chord (Continuous span with joints under vertical posts and diagonal intersections)
+      { id: 'B0', x: -25.0, y: 0.0 },       // Left shoe gusset plate
+      { id: 'B1', x: -19.2, y: 0.0 },       // Base of Post 1 Left
+      { id: 'B2', x: -9.5, y: 0.0 },        // Intermediate bottom chord joint (V-diagonals)
+      { id: 'B3', x: -4.5, y: 0.0 },        // Base of Post 2 Left
+      { id: 'B3_r', x: 4.5, y: 0.0 },       // Base of Post 2 Right
+      { id: 'B2_r', x: 9.5, y: 0.0 },       // Intermediate bottom chord joint right
+      { id: 'B1_r', x: 19.2, y: 0.0 },      // Base of Post 1 Right
+      { id: 'B0_r', x: 25.0, y: 0.0 },      // Right shoe gusset plate
 
-      // Top Arch Chord (Parker Truss with Horizontal Apex Flat)
-      { id: 'T1', x: -19.9, y: 3.7 },
-      { id: 'T2', x: -13.5, y: 6.5 },
-      { id: 'T3', x: -4.4, y: 8.8 },
-      { id: 'T_mid_L', x: -2.1, y: 9.2 },
-      { id: 'T_mid_R', x: 2.1, y: 9.2 },
-      { id: 'T3_r', x: 4.4, y: 8.8 },
-      { id: 'T2_r', x: 13.5, y: 6.5 },
-      { id: 'T1_r', x: 19.9, y: 3.7 },
+      // Top Arch Chord
+      { id: 'T1', x: -19.2, y: 3.9 },       // Top of Post 1 Left (short vertical post)
+      { id: 'T2', x: -13.2, y: 6.6 },       // Intermediate top chord joint
+      { id: 'T3', x: -4.5, y: 8.9 },        // Top of Post 2 Left (tall vertical post)
+      { id: 'T_apex', x: 0.0, y: 9.3 },     // Top apex / crown of arch
+      { id: 'T3_r', x: 4.5, y: 8.9 },       // Top of Post 2 Right (tall vertical post)
+      { id: 'T2_r', x: 13.2, y: 6.6 },      // Intermediate top chord joint right
+      { id: 'T1_r', x: 19.2, y: 3.9 },      // Top of Post 1 Right (short vertical post)
 
-      // Subdivided Panels & Intersections
-      { id: 'M1', x: -15.5, y: 1.8 },
-      { id: 'M2', x: -8.0, y: 3.8 },
-      { id: 'M3', x: -4.4, y: 6.3 },
-      { id: 'M_mid', x: 0.0, y: 6.3 }, // Center chevron apex
-      { id: 'M3_r', x: 4.4, y: 6.3 },
-      { id: 'M2_r', x: 8.0, y: 3.8 },
-      { id: 'M1_r', x: 15.5, y: 1.8 }
+      // Subdivided Bracing & Intermediate Intersection Plates
+      { id: 'M1', x: -16.0, y: 2.2 },       // K-brace intersection plate Bay 1
+      { id: 'P2_mid', x: -4.5, y: 6.5 },    // Mid-height bracket on Post 2 Left
+      { id: 'M_center', x: 0.0, y: 6.5 },   // Center chevron cross-tie intersection
+      { id: 'P2_mid_r', x: 4.5, y: 6.5 },   // Mid-height bracket on Post 2 Right
+      { id: 'M1_r', x: 16.0, y: 2.2 }       // K-brace intersection plate Bay 1 Right
     ];
 
     // Connectivity List for Truss Members
     const trussEdges = [
       // Bottom Chords
-      ['B0', 'B1'], ['B1', 'B2'], ['B2', 'B3'], ['B3', 'B_mid'],
-      ['B_mid', 'B3_r'], ['B3_r', 'B2_r'], ['B2_r', 'B1_r'], ['B1_r', 'B0_r'],
+      ['B0', 'B1'], ['B1', 'B2'], ['B2', 'B3'], ['B3', 'B3_r'],
+      ['B3_r', 'B2_r'], ['B2_r', 'B1_r'], ['B1_r', 'B0_r'],
 
-      // Top Chords with Flat Crest
-      ['B0', 'T1'], ['T1', 'T2'], ['T2', 'T3'], ['T3', 'T_mid_L'],
-      ['T_mid_L', 'T_mid_R'],
-      ['T_mid_R', 'T3_r'], ['T3_r', 'T2_r'], ['T2_r', 'T1_r'], ['T1_r', 'B0_r'],
+      // Top Chords
+      ['B0', 'T1'], ['T1', 'T2'], ['T2', 'T3'], ['T3', 'T_apex'],
+      ['T_apex', 'T3_r'], ['T3_r', 'T2_r'], ['T2_r', 'T1_r'], ['T1_r', 'B0_r'],
 
-      // Verticals
-      ['B1', 'T1'], ['B1_r', 'T1_r'],
-      ['B3', 'M3'], ['M3', 'T3'],
-      ['B3_r', 'M3_r'], ['M3_r', 'T3_r'],
-      ['M_mid', 'T_mid_L'], ['M_mid', 'T_mid_R'],
+      // Vertical Posts (EXACTLY 2 on Left Side, 2 on Right Side)
+      ['B1', 'T1'],         // Post 1 Left
+      ['B3', 'T3'],         // Post 2 Left
+      ['B3_r', 'T3_r'],     // Post 2 Right
+      ['B1_r', 'T1_r'],     // Post 1 Right
 
-      // Diagonals with Sub-panel Bracing
-      // Bay 1: X-Brace
-      ['T1', 'M1'], ['M1', 'B2'],
-      ['B1', 'M1'], ['M1', 'T2'],
+      // Left Diagonals
+      ['T1', 'M1'], ['B1', 'M1'], ['M1', 'T2'], ['M1', 'B2'],
+      ['T2', 'B2'], ['T2', 'B3'], ['B2', 'T3'],
 
-      // Bay 2: X-Brace
-      ['T2', 'M2'], ['M2', 'B3'],
-      ['B2', 'M2'], ['M2', 'T3'],
+      // Right Diagonals
+      ['T1_r', 'M1_r'], ['B1_r', 'M1_r'], ['M1_r', 'T2_r'], ['M1_r', 'B2_r'],
+      ['T2_r', 'B2_r'], ['T2_r', 'B3_r'], ['B2_r', 'T3_r'],
 
-      // Center Bay: Inverted Chevron + Horizontal Tie
-      ['M3', 'M_mid'], ['M_mid', 'M3_r'],
-      ['B3', 'M_mid'], ['B3_r', 'M_mid'],
-
-      // Right Bay 2: X-Brace
-      ['T3_r', 'M2_r'], ['M2_r', 'B2_r'],
-      ['B3_r', 'M2_r'], ['M2_r', 'T2_r'],
-
-      // Right Bay 1: X-Brace
-      ['T2_r', 'M1_r'], ['M1_r', 'B1_r'],
-      ['B2_r', 'M1_r'], ['M1_r', 'T1_r']
+      // Center Bay (Chevron / Inverted V + Horizontal Cross-Tie)
+      ['B3', 'T_apex'], ['B3_r', 'T_apex'],
+      ['P2_mid', 'M_center'], ['M_center', 'P2_mid_r']
     ];
 
     const unitBoxGeo = new THREE.BoxGeometry(1, 1, 1);
@@ -544,10 +530,10 @@ function Bridge3DViewerComponent({
 
     [-DECK_W / 2, DECK_W / 2].forEach(zPos => {
       rawNodes.forEach(n => {
-        let pSize = 0.9;
-        if (n.id.startsWith('B0')) pSize = 1.35; // Shoe plates
-        else if (n.id === 'M_mid' || n.id.startsWith('T3') || n.id.startsWith('T_mid')) pSize = 1.1;
-        else if (n.id.startsWith('M1') || n.id.startsWith('M2')) pSize = 0.68; // Intersection plates
+        let pSize = 0.95;
+        if (n.id.startsWith('B0')) pSize = 1.35; // End shoe plates
+        else if (n.id.startsWith('T3') || n.id.startsWith('B3') || n.id === 'T_apex') pSize = 1.15;
+        else if (n.id.startsWith('M1') || n.id.startsWith('P2') || n.id === 'M_center') pSize = 0.72; // Sub-panel plates
 
         const plate = createGussetPlate(n.id, n.x, n.y, zPos, pSize);
         platesList.push(plate);
@@ -605,7 +591,7 @@ function Bridge3DViewerComponent({
     });
 
     // 12. Overhead Lateral Wind Struts connecting Left & Right Arches
-    const topJoints = ['T1', 'T2', 'T3', 'T_mid_L', 'T_mid_R', 'T3_r', 'T2_r', 'T1_r'];
+    const topJoints = ['T1', 'T2', 'T3', 'T_apex', 'T3_r', 'T2_r', 'T1_r'];
     topJoints.forEach(tjId => {
       const node = rawNodes.find(n => n.id === tjId);
       if (node) {
@@ -635,56 +621,76 @@ function Bridge3DViewerComponent({
     led.position.set(0, 0.2, 0);
     sensor.add(led);
 
-    // 14. Mid-Span Hydraulic Loading Actuator Assembly (Aktuator Pembebanan Tengah Bentang)
+    // 14. Mid-Span Industrial Servo-Hydraulic Actuator Assembly (100% Matching Uploaded Photo)
+    // Features: Royal Blue Body, 4 Chrome Vertical Tie-Rods, Square Manifold Blocks,
+    // Lifting Eye Rings, Chrome Piston Ram, and Cast Swivel Clevis Footplate Base.
     const actGeometries = [];
     const actMaterials = [];
     const regActGeo = (g) => { actGeometries.push(g); return g; };
     const regActMat = (m) => { actMaterials.push(m); return m; };
 
-    // Actuator Materials
+    // Authentic Actuator Materials
     const reactionBeamMat = regActMat(new THREE.MeshStandardMaterial({
       color: 0x22262c, // Heavy structural charcoal steel reaction gantry
       roughness: 0.6,
-      metalness: 0.6
+      metalness: 0.65
     }));
 
     const hazardYellowMat = regActMat(new THREE.MeshStandardMaterial({
-      color: 0xf5ba13, // Safety hazard golden yellow
+      color: 0xf5ba13, // Safety hazard golden yellow accents
       roughness: 0.35,
       metalness: 0.4
     }));
 
-    const cylinderBodyMat = regActMat(new THREE.MeshStandardMaterial({
-      color: 0xe59714, // Heavy industrial hydraulic yellow
-      roughness: 0.35,
-      metalness: 0.55
+    const actuatorBlueMat = regActMat(new THREE.MeshStandardMaterial({
+      color: 0x134e9e, // Industrial Royal / Cobalt Blue (Semi-Gloss)
+      roughness: 0.32,
+      metalness: 0.52
     }));
 
-    const chromePistonMat = regActMat(new THREE.MeshStandardMaterial({
-      color: 0xf0f4f8, // Polished chrome steel piston ram
-      roughness: 0.12,
-      metalness: 0.95
+    const actuatorCastBlueMat = regActMat(new THREE.MeshStandardMaterial({
+      color: 0x103d78, // Heavy cast textured blue for swivel clevis footplate
+      roughness: 0.65,
+      metalness: 0.32
     }));
 
-    const loadCellBodyMat = regActMat(new THREE.MeshStandardMaterial({
-      color: 0xb8c0cc, // Stainless steel load cell housing
-      roughness: 0.3,
+    const chromeMat = regActMat(new THREE.MeshStandardMaterial({
+      color: 0xf2f6fa, // Polished chrome steel for piston ram & tie-rods
+      roughness: 0.08,
+      metalness: 0.96
+    }));
+
+    const silverRingMat = regActMat(new THREE.MeshStandardMaterial({
+      color: 0xcbd5e1, // Silver galvanized forged steel lifting eye bolts
+      roughness: 0.25,
       metalness: 0.85
     }));
 
+    const darkSteelMat = regActMat(new THREE.MeshStandardMaterial({
+      color: 0x252930, // Hardened tool steel for pivot pin & gland collar
+      roughness: 0.45,
+      metalness: 0.75
+    }));
+
+    const transducerPortMat = regActMat(new THREE.MeshStandardMaterial({
+      color: 0x181a1d, // LVDT electrical transducer connector
+      roughness: 0.4,
+      metalness: 0.5
+    }));
+
     const loadCellLedMat = regActMat(new THREE.MeshBasicMaterial({
-      color: 0x10b981 // Status LED (green idle, amber testing, red danger)
+      color: 0x10b981 // Status LED indicator (green idle, amber testing, red overload)
     }));
 
     const spreaderBeamMat = regActMat(new THREE.MeshStandardMaterial({
-      color: 0x32373e, // Heavy steel distribution plate
+      color: 0x2e333a, // Heavy distribution steel plate on bridge deck
       roughness: 0.55,
       metalness: 0.65
     }));
 
     const rubberPadMat = regActMat(new THREE.MeshStandardMaterial({
-      color: 0x181a1d, // Neoprene elastomeric bearing pad
-      roughness: 0.9
+      color: 0x181a1d, // High-pressure flexible hydraulic lines
+      roughness: 0.85
     }));
 
     const forceArrowMat = regActMat(new THREE.MeshStandardMaterial({
@@ -696,7 +702,7 @@ function Bridge3DViewerComponent({
 
     // A. Overhead Reaction Crosshead Beam (Mounted across top chord apex at X = 0)
     const reactionBeam = new THREE.Mesh(
-      regActGeo(new THREE.BoxGeometry(0.72, 0.5, DECK_W + 0.8)),
+      regActGeo(new THREE.BoxGeometry(0.76, 0.52, DECK_W + 0.8)),
       reactionBeamMat
     );
     reactionBeam.position.set(0, BASE_Y + 9.45, 0);
@@ -705,90 +711,249 @@ function Bridge3DViewerComponent({
     // Hazard yellow end caps on reaction beam
     [-DECK_W / 2 - 0.35, DECK_W / 2 + 0.35].forEach(zc => {
       const cap = new THREE.Mesh(
-        regActGeo(new THREE.BoxGeometry(0.74, 0.52, 0.15)),
+        regActGeo(new THREE.BoxGeometry(0.78, 0.54, 0.15)),
         hazardYellowMat
       );
       cap.position.set(0, BASE_Y + 9.45, zc);
       scene.add(cap);
     });
 
-    // B. Hydraulic Cylinder Housing (Fixed to overhead reaction beam)
-    const cylinderGroup = new THREE.Group();
-    cylinderGroup.position.set(0, BASE_Y + 7.2, 0);
+    // B. Fixed Upper Actuator Assembly (Overhead Blue Servo-Hydraulic Body)
+    const fixedActuatorGroup = new THREE.Group();
+    fixedActuatorGroup.position.set(0, BASE_Y, 0);
 
-    // Main yellow cylinder barrel
-    const cylBarrel = new THREE.Mesh(
-      regActGeo(new THREE.CylinderGeometry(0.42, 0.42, 2.2, 16)),
-      cylinderBodyMat
+    // 1. Top Square Manifold Block
+    const topManifold = new THREE.Mesh(
+      regActGeo(new THREE.BoxGeometry(0.86, 0.65, 0.86)),
+      actuatorBlueMat
     );
-    cylinderGroup.add(cylBarrel);
+    topManifold.position.set(0, 8.55, 0);
+    fixedActuatorGroup.add(topManifold);
 
-    // Top mounting flange
-    const cylTopFlange = new THREE.Mesh(
-      regActGeo(new THREE.CylinderGeometry(0.54, 0.54, 0.24, 16)),
-      reactionBeamMat
-    );
-    cylTopFlange.position.y = 1.15;
-    cylinderGroup.add(cylTopFlange);
-
-    // Bottom gland seal collar
-    const cylBotCollar = new THREE.Mesh(
-      regActGeo(new THREE.CylinderGeometry(0.48, 0.48, 0.22, 16)),
-      reactionBeamMat
-    );
-    cylBotCollar.position.y = -1.1;
-    cylinderGroup.add(cylBotCollar);
-
-    // Manifold block & hydraulic fittings
-    const manifold = new THREE.Mesh(
-      regActGeo(new THREE.BoxGeometry(0.24, 0.45, 0.32)),
-      reactionBeamMat
-    );
-    manifold.position.set(0.42, 0.2, 0);
-    cylinderGroup.add(manifold);
-
-    // Dual hydraulic hoses (black flexible high-pressure lines)
-    [-0.08, 0.08].forEach(zh => {
-      const hose = new THREE.Mesh(
-        regActGeo(new THREE.CylinderGeometry(0.04, 0.04, 1.4, 8)),
-        rubberPadMat
-      );
-      hose.position.set(0.55, 1.1, zh);
-      hose.rotation.z = -0.18;
-      cylinderGroup.add(hose);
+    // 4 Chrome Hex Nuts on top of Manifold Block
+    const nutGeo = regActGeo(new THREE.CylinderGeometry(0.065, 0.065, 0.12, 6));
+    [
+      [-0.32, -0.32], [0.32, -0.32],
+      [-0.32, 0.32], [0.32, 0.32]
+    ].forEach(([nx, nz]) => {
+      const nut = new THREE.Mesh(nutGeo, chromeMat);
+      nut.position.set(nx, 8.92, nz);
+      fixedActuatorGroup.add(nut);
     });
 
-    scene.add(cylinderGroup);
+    // Silver Lifting Eyebolts (Forged Eye Rings on Top Block Sides)
+    const eyeRingGeo = regActGeo(new THREE.TorusGeometry(0.12, 0.035, 8, 16));
+    [-0.44, 0.44].forEach(ez => {
+      const ring = new THREE.Mesh(eyeRingGeo, silverRingMat);
+      ring.position.set(0, 8.55, ez);
+      ring.rotation.y = Math.PI / 2;
+      fixedActuatorGroup.add(ring);
+    });
 
-    // C. Piston Ram (Dynamic vertical stroke extending downwards)
-    const unitPistonGeo = regActGeo(new THREE.CylinderGeometry(0.22, 0.22, 1.0, 16));
-    const pistonMesh = new THREE.Mesh(unitPistonGeo, chromePistonMat);
-    pistonMesh.position.set(0, BASE_Y + 3.525, 0);
-    pistonMesh.scale.set(1, 4.95, 1);
+    // Top Hydraulic Port Fitting Block
+    const topPort = new THREE.Mesh(
+      regActGeo(new THREE.BoxGeometry(0.18, 0.22, 0.24)),
+      actuatorBlueMat
+    );
+    topPort.position.set(0.48, 8.55, 0);
+    fixedActuatorGroup.add(topPort);
+
+    const topPortFitting = new THREE.Mesh(
+      regActGeo(new THREE.CylinderGeometry(0.065, 0.065, 0.18, 6)),
+      chromeMat
+    );
+    topPortFitting.position.set(0.58, 8.55, 0);
+    topPortFitting.rotation.z = Math.PI / 2;
+    fixedActuatorGroup.add(topPortFitting);
+
+    // 2. Four Chrome Vertical Tie-Rods (Connecting Top & Bottom Manifold Blocks)
+    const tieRodGeo = regActGeo(new THREE.CylinderGeometry(0.038, 0.038, 2.3, 10));
+    [
+      [-0.32, -0.32], [0.32, -0.32],
+      [-0.32, 0.32], [0.32, 0.32]
+    ].forEach(([rx, rz]) => {
+      const rod = new THREE.Mesh(tieRodGeo, chromeMat);
+      rod.position.set(rx, 7.3, rz);
+      fixedActuatorGroup.add(rod);
+    });
+
+    // 3. Central Royal Blue Hydraulic Cylinder Barrel
+    const cylBarrel = new THREE.Mesh(
+      regActGeo(new THREE.CylinderGeometry(0.36, 0.36, 2.2, 24)),
+      actuatorBlueMat
+    );
+    cylBarrel.position.set(0, 7.3, 0);
+    fixedActuatorGroup.add(cylBarrel);
+
+    // 4. Lower Square Manifold Block
+    const botManifold = new THREE.Mesh(
+      regActGeo(new THREE.BoxGeometry(0.86, 0.65, 0.86)),
+      actuatorBlueMat
+    );
+    botManifold.position.set(0, 6.05, 0);
+    fixedActuatorGroup.add(botManifold);
+
+    // 4 Chrome Hex Nuts under Bottom Manifold Block
+    [
+      [-0.32, -0.32], [0.32, -0.32],
+      [-0.32, 0.32], [0.32, 0.32]
+    ].forEach(([nx, nz]) => {
+      const nut = new THREE.Mesh(nutGeo, chromeMat);
+      nut.position.set(nx, 5.68, nz);
+      fixedActuatorGroup.add(nut);
+    });
+
+    // Silver Lifting Eyebolts on Lower Block Sides
+    [-0.44, 0.44].forEach(ez => {
+      const ring = new THREE.Mesh(eyeRingGeo, silverRingMat);
+      ring.position.set(0, 6.05, ez);
+      ring.rotation.y = Math.PI / 2;
+      fixedActuatorGroup.add(ring);
+    });
+
+    // Lower Hydraulic Port Fitting Block
+    const botPort = new THREE.Mesh(
+      regActGeo(new THREE.BoxGeometry(0.18, 0.22, 0.24)),
+      actuatorBlueMat
+    );
+    botPort.position.set(0.48, 6.05, 0);
+    fixedActuatorGroup.add(botPort);
+
+    const botPortFitting = new THREE.Mesh(
+      regActGeo(new THREE.CylinderGeometry(0.065, 0.065, 0.18, 6)),
+      chromeMat
+    );
+    botPortFitting.position.set(0.58, 6.05, 0);
+    botPortFitting.rotation.z = Math.PI / 2;
+    fixedActuatorGroup.add(botPortFitting);
+
+    // 5. Lower Cylindrical Extension / Transducer Housing
+    const transducerBarrel = new THREE.Mesh(
+      regActGeo(new THREE.CylinderGeometry(0.30, 0.30, 0.85, 20)),
+      actuatorBlueMat
+    );
+    transducerBarrel.position.set(0, 5.4, 0);
+    fixedActuatorGroup.add(transducerBarrel);
+
+    // LVDT Electrical Connector Socket
+    const lvdtPort = new THREE.Mesh(
+      regActGeo(new THREE.BoxGeometry(0.14, 0.16, 0.14)),
+      transducerPortMat
+    );
+    lvdtPort.position.set(0.33, 5.4, 0);
+    fixedActuatorGroup.add(lvdtPort);
+
+    const lvdtPins = new THREE.Mesh(
+      regActGeo(new THREE.CylinderGeometry(0.05, 0.05, 0.06, 12)),
+      chromeMat
+    );
+    lvdtPins.position.set(0.41, 5.4, 0);
+    lvdtPins.rotation.z = Math.PI / 2;
+    fixedActuatorGroup.add(lvdtPins);
+
+    // Bottom Gland Seal Ring
+    const glandSeal = new THREE.Mesh(
+      regActGeo(new THREE.CylinderGeometry(0.34, 0.34, 0.14, 20)),
+      darkSteelMat
+    );
+    glandSeal.position.set(0, 4.95, 0);
+    fixedActuatorGroup.add(glandSeal);
+
+    // High-Pressure Flexible Hydraulic Hoses
+    [-0.1, 0.1].forEach(zh => {
+      const hose = new THREE.Mesh(
+        regActGeo(new THREE.CylinderGeometry(0.04, 0.04, 1.8, 8)),
+        rubberPadMat
+      );
+      hose.position.set(0.68, 7.5, zh);
+      hose.rotation.z = -0.15;
+      fixedActuatorGroup.add(hose);
+    });
+
+    scene.add(fixedActuatorGroup);
+
+    // C. Dynamic Chrome Piston Rod (Polished Chrome Ram extending downward)
+    const unitPistonGeo = regActGeo(new THREE.CylinderGeometry(0.22, 0.22, 1.0, 18));
+    const pistonMesh = new THREE.Mesh(unitPistonGeo, chromeMat);
+    pistonMesh.position.set(0, BASE_Y + 3.1, 0);
+    pistonMesh.scale.set(1, 4.0, 1);
     scene.add(pistonMesh);
 
-    // D. Load Cell Transducer (Moves with deck deflection)
-    const loadCellGroup = new THREE.Group();
-    loadCellGroup.position.set(0, BASE_Y + 0.79, 0);
+    // D. Heavy Cast Swivel Clevis Base Group (Tumpuan Sendi Knuckle Base)
+    // Moves dynamically with bridge deck deflection
+    const swivelBaseGroup = new THREE.Group();
+    swivelBaseGroup.position.set(0, BASE_Y + 0.65, 0);
 
-    const loadCellPuck = new THREE.Mesh(
-      regActGeo(new THREE.CylinderGeometry(0.38, 0.38, 0.32, 16)),
-      loadCellBodyMat
+    // 1. Upper Rod End Knuckle / Clevis Eye (Mounted to bottom of piston rod)
+    const upperKnuckle = new THREE.Mesh(
+      regActGeo(new THREE.CylinderGeometry(0.22, 0.22, 0.32, 16)),
+      actuatorBlueMat
     );
-    loadCellGroup.add(loadCellPuck);
+    upperKnuckle.position.set(0, 0.55, 0);
+    swivelBaseGroup.add(upperKnuckle);
 
-    // LED status ring
-    const ledRing = new THREE.Mesh(
-      regActGeo(new THREE.CylinderGeometry(0.40, 0.40, 0.08, 16)),
+    // 2. Heavy Transverse Swivel Pivot Pin
+    const pivotPin = new THREE.Mesh(
+      regActGeo(new THREE.CylinderGeometry(0.12, 0.12, 0.72, 16)),
+      darkSteelMat
+    );
+    pivotPin.position.set(0, 0.38, 0);
+    pivotPin.rotation.x = Math.PI / 2; // Transverse pin across Z-axis
+    swivelBaseGroup.add(pivotPin);
+
+    // Pin retaining washers / circlips on both ends
+    [-0.37, 0.37].forEach(zp => {
+      const washer = new THREE.Mesh(
+        regActGeo(new THREE.CylinderGeometry(0.16, 0.16, 0.04, 16)),
+        darkSteelMat
+      );
+      washer.position.set(0, 0.38, zp);
+      washer.rotation.x = Math.PI / 2;
+      swivelBaseGroup.add(washer);
+    });
+
+    // 3. Heavy Cast Swivel Ears (Pillow blocks flanking the knuckle)
+    [-0.24, 0.24].forEach(ze => {
+      const ear = new THREE.Mesh(
+        regActGeo(new THREE.BoxGeometry(0.38, 0.44, 0.14)),
+        actuatorCastBlueMat
+      );
+      ear.position.set(0, 0.32, ze);
+      swivelBaseGroup.add(ear);
+    });
+
+    // 4. Heavy Cast Rectangular Footplate Base
+    const footplate = new THREE.Mesh(
+      regActGeo(new THREE.BoxGeometry(0.92, 0.22, 0.72)),
+      actuatorCastBlueMat
+    );
+    footplate.position.set(0, 0.11, 0);
+    swivelBaseGroup.add(footplate);
+
+    // 4 Heavy Base Anchor Hex Bolts
+    const anchorNutGeo = regActGeo(new THREE.CylinderGeometry(0.05, 0.05, 0.08, 6));
+    [
+      [-0.34, -0.26], [0.34, -0.26],
+      [-0.34, 0.26], [0.34, 0.26]
+    ].forEach(([bx, bz]) => {
+      const bolt = new THREE.Mesh(anchorNutGeo, darkSteelMat);
+      bolt.position.set(bx, 0.24, bz);
+      swivelBaseGroup.add(bolt);
+    });
+
+    // Status LED indicator on the knuckle base
+    const baseLed = new THREE.Mesh(
+      regActGeo(new THREE.SphereGeometry(0.065, 10, 10)),
       loadCellLedMat
     );
-    loadCellGroup.add(ledRing);
+    baseLed.position.set(0.42, 0.16, 0);
+    swivelBaseGroup.add(baseLed);
 
-    scene.add(loadCellGroup);
+    scene.add(swivelBaseGroup);
 
     // E. Spreader Beam / Load Distribution Plate on Bridge Deck
     const spreaderMesh = new THREE.Mesh(
-      regActGeo(new THREE.BoxGeometry(0.68, 0.28, 5.2)),
+      regActGeo(new THREE.BoxGeometry(0.70, 0.28, 5.2)),
       spreaderBeamMat
     );
     spreaderMesh.position.set(0, BASE_Y + 0.49, 0);
@@ -797,7 +962,7 @@ function Bridge3DViewerComponent({
     // Hazard yellow caps on spreader ends
     [-2.6, 2.6].forEach(ze => {
       const cap = new THREE.Mesh(
-        regActGeo(new THREE.BoxGeometry(0.70, 0.30, 0.14)),
+        regActGeo(new THREE.BoxGeometry(0.72, 0.30, 0.14)),
         hazardYellowMat
       );
       cap.position.set(0, 0, ze);
@@ -885,7 +1050,7 @@ function Bridge3DViewerComponent({
     // Save actuator references
     actuatorRefs.current = {
       piston: pistonMesh,
-      loadCell: loadCellGroup,
+      swivelBase: swivelBaseGroup,
       loadCellLedMat,
       spreader: spreaderMesh,
       forceArrow: forceArrowGroup,
@@ -1000,12 +1165,12 @@ function Bridge3DViewerComponent({
           if (act.spreader) {
             act.spreader.position.y = BASE_Y + 0.49 - midSag;
           }
-          if (act.loadCell) {
-            act.loadCell.position.y = BASE_Y + 0.79 - midSag;
+          if (act.swivelBase) {
+            act.swivelBase.position.y = BASE_Y + 0.65 - midSag;
           }
           if (act.piston) {
-            const topY = BASE_Y + 6.0;
-            const botY = BASE_Y + 0.95 - midSag;
+            const topY = BASE_Y + 4.95;
+            const botY = BASE_Y + 1.20 - midSag;
             const pDist = Math.max(0.1, topY - botY);
             act.piston.scale.set(1, pDist, 1);
             act.piston.position.y = (topY + botY) / 2;
