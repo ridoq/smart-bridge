@@ -24,6 +24,7 @@ function Bridge3DViewerComponent({
   const dynamicMembersRef = useRef([]);
   const dynamicPlatesRef = useRef([]);
   const floorBeamsRef = useRef([]);
+  const overheadStrutsRef = useRef([]);
   const deckMeshRef = useRef(null);
   const origDeckGeoRef = useRef(null);
   const sensorRef = useRef(null);
@@ -592,6 +593,7 @@ function Bridge3DViewerComponent({
 
     // 12. Overhead Lateral Wind Struts connecting Left & Right Arches
     const topJoints = ['T1', 'T2', 'T3', 'T_apex', 'T3_r', 'T2_r', 'T1_r'];
+    const overheadStruts = [];
     topJoints.forEach(tjId => {
       const node = rawNodes.find(n => n.id === tjId);
       if (node) {
@@ -602,8 +604,10 @@ function Bridge3DViewerComponent({
         strut.rotation.x = Math.PI / 2;
         strut.position.set(node.x, BASE_Y + node.y, 0);
         scene.add(strut);
+        overheadStruts.push({ mesh: strut, nodeId: tjId, origX: node.x, origY: node.y });
       }
     });
+    overheadStrutsRef.current = overheadStruts;
 
     // 13. Mid-Span IoT Sensor Module (MPU6050 + ESP32 Box on Bottom Chord)
     const sensorMat = new THREE.MeshStandardMaterial({
@@ -1141,6 +1145,12 @@ function Bridge3DViewerComponent({
           const normSpan = (fb.x + SPAN_L / 2) / SPAN_L;
           const sag = (curDef / 10.0) * (curScale * 0.38) * Math.sin(Math.PI * normSpan);
           fb.mesh.position.set(fb.x, BASE_Y + 0.15 - sag, 0);
+        });
+
+        // 3b. Update Overhead Lateral Struts (Truss Top Chord Deflection)
+        overheadStrutsRef.current.forEach(st => {
+          const sag = nodeSag[st.nodeId] || 0;
+          st.mesh.position.set(st.origX, BASE_Y + st.origY - sag, 0);
         });
 
         // 4. Update Deck Deformation Vertices

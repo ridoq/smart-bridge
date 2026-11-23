@@ -37,7 +37,7 @@ function ModalsComponent({
               </div>
               <div className="p-3 bg-[#F6F8FA] dark:bg-[#0D1117] rounded-lg border border-[#E1E4E8] dark:border-[#21262D]">
                 <span className="text-[#656D76] dark:text-[#8B949E] block">Berat Maket</span>
-                <strong className="text-[#1A7F37] dark:text-[#3FB950] font-medium">31.28 kg (Batas Lomba &le; 40 kg)</strong>
+                <strong className="text-[#1A7F37] dark:text-[#3FB950] font-medium">31.44 kg (Batas Lomba &le; 40 kg)</strong>
               </div>
               <div className="p-3 bg-[#F6F8FA] dark:bg-[#0D1117] rounded-lg border border-[#E1E4E8] dark:border-[#21262D]">
                 <span className="text-[#656D76] dark:text-[#8B949E] block">Material Profil</span>
