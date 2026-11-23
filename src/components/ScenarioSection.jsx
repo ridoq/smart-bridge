@@ -1,7 +1,7 @@
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 
-export default function ScenarioSection({
+function ScenarioSectionComponent({
   scenario,
   onSetScenario,
   payload
@@ -122,3 +122,5 @@ export default function ScenarioSection({
     </section>
   );
 }
+
+export default React.memo(ScenarioSectionComponent);

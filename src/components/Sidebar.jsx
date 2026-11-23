@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, LayoutDashboard, Box, Activity, Sliders, FileText, Calculator, History } from 'lucide-react';
 
-export default function Sidebar({
+function SidebarComponent({
   isOpen,
   onClose,
   onOpenModal
@@ -105,3 +105,5 @@ export default function Sidebar({
     </>
   );
 }
+
+export default React.memo(SidebarComponent);

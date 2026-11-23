@@ -21,7 +21,7 @@ ChartJS.register(
   Filler
 );
 
-export default function TelemetryCharts({ vibrationHistory, frequency, theme = 'dark' }) {
+function TelemetryChartsComponent({ vibrationHistory, frequency, theme = 'dark' }) {
   const isDark = theme === 'dark';
   const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.06)';
   const tickColor = isDark ? '#8B949E' : '#656D76';
@@ -62,18 +62,21 @@ export default function TelemetryCharts({ vibrationHistory, frequency, theme = '
     };
   }, [gridColor, tickColor]);
 
-  // 2. Frequency Domain FFT Spectrum
+  // 2. Frequency Domain FFT Spectrum (Static frequency bins)
   const fftFreqLabels = useMemo(() => {
     const list = [];
     for (let f = 0; f <= 15; f += 0.5) list.push(f.toFixed(1));
     return list;
   }, []);
 
+  // Compute FFT power spectral density (Zero random noise to avoid unnecessary Chart.js re-renders)
+  const roundedFrequency = Math.round(frequency * 20) / 20; // 0.05 Hz threshold
+
   const fftData = useMemo(() => {
     const data = fftFreqLabels.map(fl => {
       const f = parseFloat(fl);
-      const diff = Math.abs(f - frequency);
-      const val = 1.2 * Math.exp(- (diff * diff) / (2 * 0.35 * 0.35)) + (Math.random() * 0.04);
+      const diff = Math.abs(f - roundedFrequency);
+      const val = 1.2 * Math.exp(- (diff * diff) / (2 * 0.35 * 0.35)) + 0.02;
       return Math.max(0.02, parseFloat(val.toFixed(3)));
     });
 
@@ -91,7 +94,7 @@ export default function TelemetryCharts({ vibrationHistory, frequency, theme = '
         }
       ]
     };
-  }, [fftFreqLabels, frequency, isDark]);
+  }, [fftFreqLabels, roundedFrequency, isDark]);
 
   const fftOptions = useMemo(() => {
     return {
@@ -155,3 +158,5 @@ export default function TelemetryCharts({ vibrationHistory, frequency, theme = '
     </section>
   );
 }
+
+export default React.memo(TelemetryChartsComponent);

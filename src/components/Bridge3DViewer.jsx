@@ -8,21 +8,19 @@ const ARCH_H = 13.5;
 const DECK_Y = 2.4;
 const BAYS = 14;
 
-export default function Bridge3DViewer({
+function Bridge3DViewerComponent({
   deflection,
   status,
   deformScale,
   onSetDeformScale
 }) {
   const mountRef = useRef(null);
-  const sceneRef = useRef(null);
   const cameraRef = useRef(null);
   const controlsRef = useRef(null);
 
   // Structural dynamic references
   const deckGeomRef = useRef(null);
   const origDeckPosRef = useRef(null);
-  const hangersGroupRef = useRef(null);
   const truckRef = useRef(null);
   const sensorRef = useRef(null);
 
@@ -49,19 +47,22 @@ export default function Bridge3DViewer({
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x7fb3d5);
     scene.fog = new THREE.FogExp2(0x8ecae6, 0.0075);
-    sceneRef.current = scene;
 
     // 2. Camera (3/4 Proposal Render Angle)
     const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 1000);
     camera.position.set(28, 14, 28);
     cameraRef.current = camera;
 
-    // 3. Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    // 3. Renderer (Optimized pixel ratio and shadow type for battery & performance)
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: false,
+      powerPreference: 'default'
+    });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     container.appendChild(renderer.domElement);
@@ -83,8 +84,8 @@ export default function Bridge3DViewer({
     const sunLight = new THREE.DirectionalLight(0xfffaed, 1.35);
     sunLight.position.set(-35, 48, 30);
     sunLight.castShadow = true;
-    sunLight.shadow.mapSize.width = 2048;
-    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.mapSize.width = 1024;
+    sunLight.shadow.mapSize.height = 1024;
     sunLight.shadow.bias = -0.0004;
     scene.add(sunLight);
 
@@ -94,7 +95,7 @@ export default function Bridge3DViewer({
 
     // 6. Build Environment
     // River Water
-    const waterGeo = new THREE.PlaneGeometry(220, 220, 64, 64);
+    const waterGeo = new THREE.PlaneGeometry(220, 220, 32, 32);
     const waterMat = new THREE.MeshStandardMaterial({
       color: 0x165b6d,
       roughness: 0.18,
@@ -146,7 +147,6 @@ export default function Bridge3DViewer({
     const hangersGroup = new THREE.Group();
     scene.add(bridgeGroup);
     scene.add(hangersGroup);
-    hangersGroupRef.current = hangersGroup;
 
     const steelMat = new THREE.MeshStandardMaterial({
       color: 0xd0d7de,
@@ -255,6 +255,39 @@ export default function Bridge3DViewer({
       }
     }
 
+    // --- ZERO-ALLOCATION HANGERS POOL ---
+    // Single shared unit cylinder geometry (height = 1, radius = 0.08)
+    const unitHangerGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.0, 8);
+    const hangerMat = new THREE.MeshStandardMaterial({
+      color: 0x94a3b8,
+      metalness: 0.85,
+      roughness: 0.25
+    });
+
+    const hangerInstances = [];
+    [-DECK_W / 2 + 0.25, DECK_W / 2 - 0.25].forEach(zPos => {
+      for (let i = 1; i < BAYS; i++) {
+        const t = i / BAYS;
+        const x = -SPAN_L / 2 + t * SPAN_L;
+        const normX = (2 * x) / SPAN_L;
+        const curve = Math.max(0, 1 - normX * normX);
+        const ribbonDepth = 1.6 * (0.6 + 0.4 * curve);
+        const yTop = DECK_Y - 0.6 + (ARCH_H - ribbonDepth) * curve;
+
+        const mesh = new THREE.Mesh(unitHangerGeo, hangerMat);
+        mesh.castShadow = true;
+        hangersGroup.add(mesh);
+
+        hangerInstances.push({
+          mesh,
+          x,
+          yTop,
+          z: zPos,
+          t
+        });
+      }
+    });
+
     // Mid-span Sensor Box
     const sensorMat = new THREE.MeshStandardMaterial({
       color: 0x2f81f7,
@@ -305,62 +338,71 @@ export default function Bridge3DViewer({
     };
     window.addEventListener('resize', handleResize);
 
+    // Tab Visibility Handler (Stop rendering when user minimizes or switches tab)
+    let isTabVisible = !document.hidden;
+    const handleVisibilityChange = () => {
+      isTabVisible = !document.hidden;
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     // Animation & Physics Loop
     let animId;
     let truckPos = 0;
+    let lastComputedDef = -999;
+    let lastComputedScale = -999;
 
     const animate = () => {
       animId = requestAnimationFrame(animate);
 
+      // Save 100% GPU / battery when tab is hidden in background
+      if (!isTabVisible) return;
+
       const curDef = currentDefRef.current;
       const curScale = currentScaleRef.current;
 
-      // Dynamic Deflection Bending of Deck
-      if (deckGeomRef.current && origDeckPosRef.current) {
-        const pos = deckGeomRef.current.attributes.position;
-        const orig = origDeckPosRef.current;
-        for (let i = 0; i < pos.count; i++) {
-          const ox = orig.getX(i);
-          const oy = orig.getY(i);
-          const normSpan = (ox + SPAN_L / 2) / SPAN_L;
-          const sag = (curDef / 10.0) * (curScale * 0.4) * Math.sin(Math.PI * normSpan);
-          pos.setY(i, oy - sag);
-        }
-        pos.needsUpdate = true;
-        deckGeomRef.current.computeVertexNormals();
-      }
-
-      // Rebuild Dynamic Hangers
-      if (hangersGroupRef.current) {
-        const grp = hangersGroupRef.current;
-        while (grp.children.length > 0) grp.remove(grp.children[0]);
-
-        const hMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 });
-        if (curDef >= 8.0) hMat.color.setHex(0xf85149);
-        else if (curDef >= 5.0) hMat.color.setHex(0xd29922);
-
-        [-DECK_W / 2 + 0.25, DECK_W / 2 - 0.25].forEach(zPos => {
-          for (let i = 1; i < BAYS; i++) {
-            const t = i / BAYS;
-            const x = -SPAN_L / 2 + t * SPAN_L;
-            const normX = (2 * x) / SPAN_L;
-            const curve = Math.max(0, 1 - normX * normX);
-            const ribbonDepth = 1.6 * (0.6 + 0.4 * curve);
-            const yBot = DECK_Y - 0.6 + (ARCH_H - ribbonDepth) * curve;
-
-            const sag = (curDef / 10.0) * (curScale * 0.4) * Math.sin(Math.PI * t);
-            const yDeckPoint = DECK_Y - sag;
-
-            if (yBot > yDeckPoint + 0.4) {
-              const pTop = new THREE.Vector3(x, yBot, zPos);
-              const pBot = new THREE.Vector3(x, yDeckPoint, zPos);
-              createStrut(pTop, pBot, 0.08, hMat, grp);
-            }
+      // 1. Dynamic Deflection Bending (Recompute vertices ONLY when value changes)
+      if (Math.abs(curDef - lastComputedDef) > 0.005 || curScale !== lastComputedScale) {
+        if (deckGeomRef.current && origDeckPosRef.current) {
+          const pos = deckGeomRef.current.attributes.position;
+          const orig = origDeckPosRef.current;
+          for (let i = 0; i < pos.count; i++) {
+            const ox = orig.getX(i);
+            const oy = orig.getY(i);
+            const normSpan = (ox + SPAN_L / 2) / SPAN_L;
+            const sag = (curDef / 10.0) * (curScale * 0.4) * Math.sin(Math.PI * normSpan);
+            pos.setY(i, oy - sag);
           }
-        });
+          pos.needsUpdate = true;
+          deckGeomRef.current.computeVertexNormals();
+        }
+        lastComputedDef = curDef;
+        lastComputedScale = curScale;
       }
 
-      // Truck Animation
+      // 2. Dynamic Hangers (ZERO ALLOCATION: Updates existing mesh scale & position)
+      let targetHangerColor = 0x94a3b8;
+      if (curDef >= 8.0) targetHangerColor = 0xf85149;
+      else if (curDef >= 5.0) targetHangerColor = 0xd29922;
+      if (hangerMat.color.getHex() !== targetHangerColor) {
+        hangerMat.color.setHex(targetHangerColor);
+      }
+
+      for (let i = 0; i < hangerInstances.length; i++) {
+        const h = hangerInstances[i];
+        const sag = (curDef / 10.0) * (curScale * 0.4) * Math.sin(Math.PI * h.t);
+        const yDeckPoint = DECK_Y - sag;
+        const height = h.yTop - yDeckPoint;
+
+        if (height > 0.2) {
+          h.mesh.visible = true;
+          h.mesh.scale.set(1, height, 1);
+          h.mesh.position.set(h.x, (h.yTop + yDeckPoint) * 0.5, h.z);
+        } else {
+          h.mesh.visible = false;
+        }
+      }
+
+      // 3. Truck Animation
       if (truckRef.current) {
         truckPos += 0.08;
         if (truckPos > SPAN_L / 2 - 2) truckPos = -SPAN_L / 2 + 2;
@@ -370,7 +412,7 @@ export default function Bridge3DViewer({
         truckRef.current.position.y = DECK_Y - sag;
       }
 
-      // Sensor Beacon Pulse
+      // 4. Sensor Beacon Pulse
       if (sensorRef.current) {
         const s = 1 + 0.08 * Math.sin(Date.now() * 0.006);
         sensorRef.current.scale.set(s, s, s);
@@ -385,7 +427,25 @@ export default function Bridge3DViewer({
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', handleResize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+
+      // Cleanly dispose Three.js geometries and materials to avoid VRAM leak
+      unitHangerGeo.dispose();
+      hangerMat.dispose();
+      waterGeo.dispose();
+      waterMat.dispose();
+      deckGeo.dispose();
+      asphaltMat.dispose();
+      steelMat.dispose();
+      pierMat.dispose();
+      curbMat.dispose();
+      lineMat.dispose();
+      sensorMat.dispose();
+
       renderer.dispose();
+      if (renderer.forceContextLoss) {
+        renderer.forceContextLoss();
+      }
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
@@ -493,3 +553,5 @@ export default function Bridge3DViewer({
     </section>
   );
 }
+
+export default React.memo(Bridge3DViewerComponent);

@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, Download } from 'lucide-react';
 
-export default function Modals({
+function ModalsComponent({
   activeModal,
   onClose,
   logs,
@@ -135,3 +135,5 @@ export default function Modals({
     </div>
   );
 }
+
+export default React.memo(ModalsComponent);

@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function MetricsGrid({ payload }) {
+function MetricsGridComponent({ payload }) {
   // Damage Status Label styling
   let damageText = 'Normal · 0.0% deviasi';
   let damageColor = 'text-[#1A7F37] dark:text-[#3FB950]';
@@ -91,3 +91,5 @@ export default function MetricsGrid({ payload }) {
     </div>
   );
 }
+
+export default React.memo(MetricsGridComponent);

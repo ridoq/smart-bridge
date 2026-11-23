@@ -36,6 +36,9 @@ export function useBridgeTelemetry() {
         audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
       }
       const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sawtooth';
@@ -50,6 +53,15 @@ export function useBridgeTelemetry() {
       // Audio context might need user gesture
     }
   }, [isMuted]);
+
+  // Clean up AudioContext on unmount
+  useEffect(() => {
+    return () => {
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.close().catch(() => {});
+      }
+    };
+  }, []);
 
   const addLog = useCallback((text) => {
     const time = new Date().toLocaleTimeString('id-ID');
@@ -73,9 +85,11 @@ export function useBridgeTelemetry() {
     setIsMuted(prev => !prev);
   }, []);
 
-  // Simulation / Live Loop (Every 300ms)
+  // Optimized Simulation / Live Loop (Relaxed to 600ms, paused when tab is hidden)
   useEffect(() => {
-    const interval = setInterval(() => {
+    let interval = null;
+
+    const runTick = () => {
       if (appMode === 'sim') {
         let freq = 4.88;
         let def = 0.85;
@@ -146,9 +160,36 @@ export function useBridgeTelemetry() {
           })
           .catch(() => {});
       }
-    }, 300);
+    };
 
-    return () => clearInterval(interval);
+    const startTimer = () => {
+      if (!interval) {
+        interval = setInterval(runTick, 600);
+      }
+    };
+
+    const stopTimer = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        stopTimer();
+      } else {
+        startTimer();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    startTimer();
+
+    return () => {
+      stopTimer();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [appMode, scenario, playBeep]);
 
   // Export CSV
